@@ -13,7 +13,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 HERE = pathlib.Path(__file__).parent
-MODULES = ["app.rules.js", "app.core.js", "app.wizard.js"]
+MODULES = ["app.rules.js", "app.species.js", "app.core.js", "app.wizard.js"]
 
 
 def main() -> int:

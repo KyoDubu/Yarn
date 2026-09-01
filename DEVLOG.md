@@ -1,6 +1,6 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-01 - Current build: **v1.2 "guided creation"**_
+_Last updated: 2026-09-01 - Current build: **v1.3 "a whole bestiary of species"**_
 
 A single-page, offline-first **D&D character builder and campaign tracker**.
 Sibling project to the Budget Planner: same architecture, same Firebase project,
@@ -53,7 +53,8 @@ the modules into one HTML file.
 |------|------|
 | `yarn.html` | Markup + `<script>` include order. Loads rules -> core -> wizard -> ui. |
 | `app.css` | All styling, hand-rolled, zero deps. Includes the wizard modal. |
-| `app.rules.js` | Static 5e SRD data + generation tables (standard array, point-buy, suggested arrays, name parts). |
+| `app.rules.js` | Static 5e SRD data + generation tables (standard array, point-buy, suggested arrays, name parts) + lookup helpers. |
+| `app.species.js` | Species + subspecies (subrace) data: size/speed/ASI/traits/languages. Big domain, own file. |
 | `app.core.js` | Data model, `YARN.state`, `normalize()`, save/load, derived-stat math, dice, point-buy, clone. |
 | `app.wizard.js` | The guided character-creation wizard (modal step machine). |
 | `app.ui.js` | Top bar + character sheet renderer + all interaction wiring. |
@@ -175,6 +176,37 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
     never been browser-loaded, so the UI had never actually rendered until now.
   - Coverage: `test_wizard.py` (33 assertions) + `test_wizard_e2e.py` (15,
     full click-through of the real page). Full suite now **105 green**.
+- **v1.3** - **Species/subspecies data overhaul**. Went from 9 species with no
+  subraces to **41 species**, most with real subraces (subraces STACK their
+  ability bonus on top of the base species - a Hill Dwarf gets both the
+  Dwarf's +2 CON and the Hill's +1 WIS). New `app.species.js` holds it all
+  (own file - too big a domain for `app.rules.js`).
+  - Added `YARN.speciesASI/speciesSpeed/speciesSize/speciesProfile` to
+    `app.core.js`, replacing the old single-species lookup in `abilityScore`.
+    A subrace can override its parent's speed (Wood Elf 35 ft) or size.
+  - New **"Species Traits" panel** on the sheet: darkvision, resistances,
+    languages and key features as display-only text (never fed back into
+    the math).
+  - Wizard's species step gained an **inline subrace picker** - appears the
+    moment you pick a species that has one, and blocks Next until you choose
+    (mirrors the rulebook: subraces aren't optional where they exist).
+  - Sheet gained a matching **Subspecies dropdown**; switching species
+    blanks a now-invalid subspecies automatically, on both the wizard and
+    the sheet.
+  - This is also **Marei's actual fix**: Shadar-Kai is now a real Elf
+    subrace instead of an unrecognized species name.
+  - Post-2020 species with floating (player's-choice) ability bonuses
+    (Variant Human, Changeling, Harengon, Owlin, Fairy, Warforged's second
+    bonus, Simic Hybrid's third) store `asi: {}` and say so in their trait
+    text, rather than inventing a bonus nobody chose - apply those via the
+    existing per-campaign ASI fields.
+  - Coverage: `test_species.py` (27 assertions: data integrity across all
+    41 species/subraces, stacking math, speed/size overrides, clone
+    fidelity) + 4 new assertions in `test_wizard_e2e.py` covering the
+    sheet's own species/subspecies dropdown and traits panel. A bug this
+    caught: the subspecies `<select>` wasn't triggering a re-render, so the
+    traits panel went stale - fixed before it ever shipped. Full suite now
+    **140 green**.
 
 ---
 

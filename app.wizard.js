@@ -50,6 +50,7 @@
       mode: "standard",
       klass: "fighter",
       species: "human",
+      subspecies: "",
       background: "Folk Hero",
       method: "standard",
       pool: YARN.STANDARD_ARRAY.slice(),
@@ -120,13 +121,29 @@
       '<div class="wz-cards wz-cards-grid">' + radioCards(cls, S.klass, "klass", "key", "name", "hint") + "</div>";
   }
 
+  function asiText(asi) {
+    var parts = Object.keys(asi || {}).map(function (k) { return "+" + asi[k] + " " + k.toUpperCase(); });
+    return parts.length ? parts.join(", ") : "\u2014";
+  }
+
   function stepSpecies() {
     var sp = YARN.SPECIES.map(function (s) {
-      var bonus = Object.keys(s.asi).map(function (k) { return "+" + s.asi[k] + " " + k.toUpperCase(); }).join(", ");
-      return { key: s.key, name: s.name, hint: s.size + " \u00b7 " + s.speed + "ft \u00b7 " + bonus };
+      var tag = Array.isArray(s.subraces) && s.subraces.length ? " \u00b7 has subraces" : "";
+      return { key: s.key, name: s.name, hint: s.size + " \u00b7 " + s.speed + "ft \u00b7 " + asiText(s.asi) + tag };
     });
+    var species = YARN.speciesInfo(S.species);
+    var subBlock = "";
+    if (species && Array.isArray(species.subraces) && species.subraces.length) {
+      var subs = species.subraces.map(function (r) {
+        return { key: r.key, name: r.name, hint: asiText(r.asi) + (r.speed ? " \u00b7 " + r.speed + "ft" : "") };
+      });
+      subBlock = '<p class="wz-lead">Choose a subrace of ' + esc(species.name) +
+        " - its bonus stacks on top of the base species.</p>" +
+        '<div class="wz-cards wz-cards-grid">' + radioCards(subs, S.subspecies, "subspecies", "key", "name", "hint") + "</div>";
+    }
     return '<p class="wz-lead">Species sets your size, speed and (in the 2014 rules Yarn uses) your ability bonuses.</p>' +
-      '<div class="wz-cards wz-cards-grid">' + radioCards(sp, S.species, "species", "key", "name", "hint") + "</div>";
+      '<div class="wz-cards wz-cards-grid">' + radioCards(sp, S.species, "species", "key", "name", "hint") + "</div>" +
+      subBlock;
   }
 
   function stepBackground() {
@@ -151,7 +168,7 @@
 
   // Selects that assign pool slots to abilities (standard / roll methods).
   function assignTable() {
-    var species = YARN.speciesInfo(S.species);
+    var speciesAsi = YARN.speciesASI(S);
     var rows = YARN.ABILITY_KEYS.map(function (k) {
       var opts = '<option value="">\u2014</option>';
       S.pool.forEach(function (val, idx) {
@@ -160,7 +177,7 @@
       });
       var idx = S.assign[k];
       var base = (idx === null || idx === undefined) ? null : Number(S.pool[idx]);
-      var spB = (species && species.asi[k]) || 0;
+      var spB = speciesAsi[k] || 0;
       var finalScore = base === null ? "\u2014" : (base + spB);
       var mod = base === null ? "" : signed(YARN.mod(base + spB));
       return "<tr><th>" + esc(abilityName(k)) + "</th>" +
@@ -176,11 +193,11 @@
 
   // Steppers for point-buy / free inputs for manual.
   function directTable() {
-    var species = YARN.speciesInfo(S.species);
+    var speciesAsi = YARN.speciesASI(S);
     var isBuy = S.method === "pointbuy";
     var rows = YARN.ABILITY_KEYS.map(function (k) {
       var base = Number(S.direct[k]) || 8;
-      var spB = (species && species.asi[k]) || 0;
+      var spB = speciesAsi[k] || 0;
       var control = isBuy
         ? '<button class="wz-step" data-wz="buy:' + k + ':-1" aria-label="decrease">\u2212</button>' +
           '<span class="wz-buyval">' + base + "</span>" +
@@ -261,10 +278,11 @@
         '<td class="wz-num wz-mod">' + signed(d.mods[k]) + "</td></tr>";
     }).join("");
     var cls = YARN.classInfo(S.klass), sp = YARN.speciesInfo(S.species);
+    var sub = YARN.subspeciesInfo(S.species, S.subspecies);
     return '<div class="wz-review">' +
       "<h3>" + esc(S.name || YARN.randomName()) + "</h3>" +
       '<p class="wz-summary">' +
-        esc(sp.name) + " " + esc(cls.name) + " \u00b7 " + esc(S.background) + " \u00b7 " + esc(S.alignment) +
+        esc(sub ? sub.name : sp.name) + " " + esc(cls.name) + " \u00b7 " + esc(S.background) + " \u00b7 " + esc(S.alignment) +
         (S.mode === "homebrew" ? ' <span class="wz-tag">homebrew</span>' : "") + "</p>" +
       '<table class="wz-abilities wz-review-tbl"><tbody>' + abilityRows + "</tbody></table>" +
       '<p class="wz-help muted">Species bonuses are already baked into these totals. ' +
@@ -280,6 +298,11 @@
   // ---- validation ------------------------------------------------------
   function canAdvance() {
     var name = STEPS[S.step];
+    if (name === "species") {
+      var sp = YARN.speciesInfo(S.species);
+      if (sp && Array.isArray(sp.subraces) && sp.subraces.length) { return !!S.subspecies; }
+      return true;
+    }
     if (name === "abilities") {
       if (S.method === "standard" || S.method === "roll") { return poolFullyAssigned(); }
       if (S.method === "pointbuy") { return YARN.pointBuyValid(S.direct); }
@@ -294,6 +317,7 @@
     c.name = S.name || YARN.randomName();
     c.klass = S.klass;
     c.species = S.species;
+    c.subspecies = S.subspecies;
     c.background = S.background;
     c.alignment = S.alignment;
     c.abilities = baseScores();
@@ -350,6 +374,7 @@
 
       case "pick":
         S[args[0]] = args[1];
+        if (args[0] === "species") { S.subspecies = ""; } // new species, blank slate for subrace
         render(); return;
 
       case "method":

@@ -61,18 +61,9 @@
 
   // ---- Species (SRD) -------------------------------------------------
   // asi = permanent ability score increases from ancestry.
-  YARN.SPECIES = [
-    { key: "dwarf",      name: "Dwarf",      speed: 25, size: "Medium", asi: { con: 2 } },
-    { key: "elf",        name: "Elf",        speed: 30, size: "Medium", asi: { dex: 2 } },
-    { key: "halfling",   name: "Halfling",   speed: 25, size: "Small",  asi: { dex: 2 } },
-    { key: "human",      name: "Human",      speed: 30, size: "Medium",
-      asi: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 } },
-    { key: "dragonborn", name: "Dragonborn", speed: 30, size: "Medium", asi: { str: 2, cha: 1 } },
-    { key: "gnome",      name: "Gnome",      speed: 25, size: "Small",  asi: { int: 2 } },
-    { key: "halfElf",    name: "Half-Elf",   speed: 30, size: "Medium", asi: { cha: 2 } },
-    { key: "halfOrc",    name: "Half-Orc",   speed: 30, size: "Medium", asi: { str: 2, con: 1 } },
-    { key: "tiefling",   name: "Tiefling",   speed: 30, size: "Medium", asi: { int: 1, cha: 2 } }
-  ];
+  // Full species + subspecies (subrace) data now lives in app.species.js -
+  // that's a big enough domain to earn its own file. This module still owns
+  // the lookup helpers below.
 
   // ---- Backgrounds ---------------------------------------------------
   YARN.BACKGROUNDS = [
@@ -171,4 +162,13 @@
   YARN.classInfo = function (key) { return byKey(YARN.CLASSES, key); };
   YARN.speciesInfo = function (key) { return byKey(YARN.SPECIES, key); };
   YARN.skillInfo = function (key) { return byKey(YARN.SKILLS, key); };
+
+  // A subrace lives nested under its parent species. Returns null if the
+  // species has no subraces, or the key doesn't match one of them - both
+  // are valid "no subrace chosen" states, not errors.
+  YARN.subspeciesInfo = function (speciesKey, subKey) {
+    var sp = YARN.speciesInfo(speciesKey);
+    if (!sp || !Array.isArray(sp.subraces) || !subKey) { return null; }
+    return byKey(sp.subraces, subKey);
+  };
 })(window.YARN = window.YARN || {});

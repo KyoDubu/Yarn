@@ -114,6 +114,20 @@
     return html + "</select>";
   }
 
+  function subspeciesSelect(char) {
+    var sp = YARN.speciesInfo(char.species);
+    var subs = (sp && Array.isArray(sp.subraces)) ? sp.subraces : [];
+    if (!subs.length) {
+      return '<select disabled><option>none for this species</option></select>';
+    }
+    var html = '<select data-model="char.subspecies" data-restructure="1"><option value="">pick one</option>';
+    subs.forEach(function (r) {
+      html += '<option value="' + esc(r.key) + '"' + (r.key === char.subspecies ? " selected" : "") +
+        ">" + esc(r.name) + "</option>";
+    });
+    return html + "</select>";
+  }
+
   function identityPanel(char, prog) {
     return '' +
       '<div class="panel span-2">' +
@@ -125,7 +139,8 @@
           '<div class="field"><label>Subclass</label>' +
             '<input data-model="char.subclass" value="' + esc(char.subclass) + '"></div>' +
           '<div class="field"><label>Species</label>' +
-            selectFrom(YARN.SPECIES, "char.species", char.species, "name", "key") + "</div>" +
+            selectFrom(YARN.SPECIES, "char.species", char.species, "name", "key").replace("<select ", '<select data-restructure="1" ') + "</div>" +
+          '<div class="field"><label>Subspecies</label>' + subspeciesSelect(char) + "</div>" +
         "</div>" +
         '<div class="row">' +
           '<div class="field"><label>Background</label>' +
@@ -259,6 +274,20 @@
     return '<div class="panel"><h2>Currency</h2><div class="row">' + std + extra + "</div></div>";
   }
 
+  // ---- render: species traits (display-only) ---------------------------
+  function traitsPanel(char) {
+    var p = YARN.speciesProfile(char);
+    if (!p.name) { return ""; }
+    var title = p.subName ? esc(p.subName) + " <span class=\"muted\">(" + esc(p.name) + ")</span>" : esc(p.name);
+    var langs = p.languages.length ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Languages: " +
+      p.languages.map(esc).join(", ") + "</p>" : "";
+    var traits = p.traits.length
+      ? "<ul class=\"linelist\">" + p.traits.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>"
+      : '<p class="muted">No traits recorded.</p>';
+    return '<div class="panel"><h2>Species Traits</h2><h3 style="margin-bottom:.2rem">' + title + "</h3>" +
+      langs + traits + "</div>";
+  }
+
   function resourcesPanel(char, prog) {
     if (!char.homebrew.enabled) { return ""; }
     var rows = char.homebrew.resources.map(function (r) {
@@ -297,7 +326,7 @@
     } else {
       body = '<div class="grid sheet-grid">' +
         identityPanel(char, prog) +
-        '<div>' + abilitiesPanel(char) + "</div>" +
+        '<div>' + abilitiesPanel(char) + traitsPanel(char) + "</div>" +
         '<div>' + combatPanel(char, prog) + savesPanel(char) + currencyPanel(char, prog) + "</div>" +
         '<div>' + skillsPanel(char) + resourcesPanel(char, prog) + "</div>" +
         "</div>";
@@ -323,9 +352,7 @@
       case "profBonus": return signed(d.profBonus);
       case "spellDC":   return d.spellSaveDC == null ? "\u2014" : d.spellSaveDC;
       case "hpSuggest": return d.suggestedHpMax;
-      case "speed":
-        var sp = YARN.speciesInfo(char.species);
-        return sp ? sp.speed : 30;
+      case "speed": return YARN.speciesSpeed(char);
       default: return "";
     }
   }
@@ -362,6 +389,7 @@
     var val = t.type === "checkbox" ? t.checked
       : (t.getAttribute("data-type") === "number" ? (t.value === "" ? 0 : Number(t.value)) : t.value);
     applyModel(model, val);
+    if (model === "char.species") { applyModel("char.subspecies", ""); } // new species -> blank subrace
     YARN.save();
     if (t.getAttribute("data-restructure")) { render(); }
     else { refreshDerived(); }

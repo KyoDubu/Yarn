@@ -13,7 +13,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 HERE = pathlib.Path(__file__).parent
-MODULES = ["app.rules.js", "app.core.js"]
+MODULES = ["app.rules.js", "app.species.js", "app.core.js"]
 
 # A level 5 elf rogue. Hand-computed expectations:
 #   DEX 16 base + 2 elf = 18 -> +4 mod

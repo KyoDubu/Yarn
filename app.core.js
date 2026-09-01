@@ -22,6 +22,7 @@
       id: YARN.uid("char"),
       name: "",
       species: "human",
+      subspecies: "",
       klass: "fighter",
       subclass: "",
       background: "Folk Hero",
@@ -231,10 +232,61 @@
   YARN.abilityScore = function (char, prog, key) {
     if (!char) { return 10; }
     var base = Number(char.abilities[key]) || 10;
-    var species = YARN.speciesInfo(char.species);
-    var speciesBonus = (species && species.asi[key]) || 0;
+    var speciesBonus = YARN.speciesASI(char)[key] || 0;
     var earned = (prog && prog.asi && prog.asi[key]) || 0;
     return base + speciesBonus + earned;
+  };
+
+  // Combined ability bonuses from species + chosen subspecies. Bonuses
+  // STACK (2014 rule): e.g. a Hill Dwarf gets the base Dwarf's +2 CON AND
+  // the Hill subrace's +1 WIS. Unknown/blank subspecies contributes nothing.
+  YARN.speciesASI = function (char) {
+    var out = {};
+    if (!char) { return out; }
+    var sp = YARN.speciesInfo(char.species);
+    if (sp && sp.asi) {
+      Object.keys(sp.asi).forEach(function (k) { out[k] = (out[k] || 0) + sp.asi[k]; });
+    }
+    var sub = YARN.subspeciesInfo(char.species, char.subspecies);
+    if (sub && sub.asi) {
+      Object.keys(sub.asi).forEach(function (k) { out[k] = (out[k] || 0) + sub.asi[k]; });
+    }
+    return out;
+  };
+
+  // A subspecies may override its parent's speed or size (e.g. Wood Elf
+  // runs at 35 ft instead of the base Elf's 30).
+  YARN.speciesSpeed = function (char) {
+    if (!char) { return 30; }
+    var sub = YARN.subspeciesInfo(char.species, char.subspecies);
+    if (sub && sub.speed) { return sub.speed; }
+    var sp = YARN.speciesInfo(char.species);
+    return sp ? sp.speed : 30;
+  };
+
+  YARN.speciesSize = function (char) {
+    if (!char) { return "Medium"; }
+    var sub = YARN.subspeciesInfo(char.species, char.subspecies);
+    if (sub && sub.size) { return sub.size; }
+    var sp = YARN.speciesInfo(char.species);
+    return sp ? sp.size : "Medium";
+  };
+
+  // One bundle for the sheet's "Species Traits" panel: display-only text,
+  // never fed back into the math. Base species traits/languages come first,
+  // then the subspecies' - matching how a player reads a stat block.
+  YARN.speciesProfile = function (char) {
+    var sp = char ? YARN.speciesInfo(char.species) : null;
+    var sub = char ? YARN.subspeciesInfo(char.species, char.subspecies) : null;
+    return {
+      name: sp ? sp.name : "",
+      subName: sub ? sub.name : "",
+      size: YARN.speciesSize(char),
+      speed: YARN.speciesSpeed(char),
+      asi: YARN.speciesASI(char),
+      languages: (sp && sp.languages ? sp.languages.slice() : []).concat(sub && sub.languages ? sub.languages : []),
+      traits: (sp && sp.traits ? sp.traits.slice() : []).concat(sub && sub.traits ? sub.traits : [])
+    };
   };
 
   YARN.abilityMod = function (char, prog, key) {

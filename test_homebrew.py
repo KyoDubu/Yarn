@@ -13,7 +13,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 HERE = pathlib.Path(__file__).parent
-MODULES = ["app.rules.js", "app.core.js"]
+MODULES = ["app.rules.js", "app.species.js", "app.core.js"]
 
 # Marei-ish: a Shadar-Kai (NOT in the SRD species table) Ranger. Unknown
 # species must degrade gracefully - base scores, no ancestry ASI.
