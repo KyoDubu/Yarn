@@ -147,10 +147,17 @@
   }
 
   function stepBackground() {
-    var bg = YARN.BACKGROUNDS.map(function (b) { return { key: b, name: b }; });
-    return '<p class="wz-lead">Your background is your life before adventuring. ' +
+    var bg = YARN.BACKGROUNDS.map(function (b) {
+      var info = YARN.backgroundInfo(b);
+      var hint = info ? info.skills.map(function (k) {
+        var s = YARN.skillInfo(k);
+        return s ? s.name : k;
+      }).join(", ") : "";
+      return { key: b, name: b, hint: hint };
+    });
+    return '<p class="wz-lead">Your background is your life before adventuring - it grants two fixed skill proficiencies. ' +
       '<button class="wz-link" data-wz="random-bg">surprise me</button></p>' +
-      '<div class="wz-cards wz-cards-grid">' + radioCards(bg, S.background, "background", "key", "name") + "</div>";
+      '<div class="wz-cards wz-cards-grid">' + radioCards(bg, S.background, "background", "key", "name", "hint") + "</div>";
   }
 
   function methodTabs() {

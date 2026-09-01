@@ -58,6 +58,10 @@ CASES = [
     ("athletics untrained -1", "YARN.skillTotal(C, P, 'athletics')", -1),
     ("passive perception 13", "YARN.passivePerception(C, P)", 13),
     ("initiative +4", "YARN.initiative(C, P)", 4),
+    # Background (Criminal) grants deception + stealth automatically, no
+    # separate opt-in needed - CHA 13 -> +1 mod, pb 3 -> +4
+    ("deception from background +4", "YARN.skillTotal(C, P, 'deception')", 4),
+    ("background skills list", "YARN.backgroundSkills(C)", ["deception", "stealth"]),
     # AC: studded leather has no dex cap
     ("AC studded 16", "YARN.ac(C, P)", 16),
     # Non-caster has no spell DC

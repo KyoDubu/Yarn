@@ -1,30 +1,28 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-01 - Current build: **v1.3 "a whole bestiary of species"**_
+_Last updated: 2026-09-01 - Current build: **v1.4 "backgrounds pull their weight"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through `beebd70` (v1.3). Nothing in
+> Tree is clean, everything committed through v1.4. Nothing in
 > flight, nothing half-finished - safe to restart any time.
 >
-> **Full test suite: 140 assertions across 5 files, all green** -
-> `test_rules.py` (36), `test_homebrew.py` (21), `test_wizard.py` (33),
+> **Full test suite: 142 assertions across 5 files, all green** -
+> `test_rules.py` (38), `test_homebrew.py` (21), `test_wizard.py` (33),
 > `test_wizard_e2e.py` (23), `test_species.py` (27). Re-run any of them with
 > `.venv\Scripts\python -u <file>.py`.
 >
 > **Open threads from the last session (D hasn't picked yet):**
-> 1. Background proficiencies aren't wired up - the wizard lets you *pick* a
->    background (Acolyte, Soldier, etc.) but doesn't grant its skill/tool
->    proficiencies onto the character yet.
-> 2. Draconic ancestry breath-weapon mechanics are recorded as trait *text*
+> 1. Draconic ancestry breath-weapon mechanics are recorded as trait *text*
 >    only (e.g. "Acid damage - 5x30 ft line, Dex save") - not an actual
 >    computed/rollable feature.
-> 3. Edition is still 2014 SRD (species-ASI) by default - D was shown the
+> 2. Edition is still 2014 SRD (species-ASI) by default - D was shown the
 >    2024 rules (background-ASI) and hasn't confirmed a switch. See the
 >    "Key 2024 Rules Distinction" section below before touching ASI math.
 >
 > Everything else (character CRUD, campaigns, derived stats, homebrew layer,
-> creation wizard, 41 species/subraces with stacking ASI) is built and tested.
-> See the Build Log at the bottom for the full history.
+> creation wizard, 41 species/subraces with stacking ASI, background
+> proficiencies) is built and tested. See the Build Log at the bottom for
+> the full history.
 
 A single-page, offline-first **D&D character builder and campaign tracker**.
 Sibling project to the Budget Planner: same architecture, same Firebase project,
@@ -231,6 +229,28 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
     caught: the subspecies `<select>` wasn't triggering a re-render, so the
     traits panel went stale - fixed before it ever shipped. Full suite now
     **140 green**.
+- **v1.4** - **Background proficiencies wired up.** Backgrounds always grant
+  two fixed skills in the 2014 PHB (never a player choice), so they're baked
+  straight into `YARN.skillTotal` the exact same way class saves are baked
+  into `saveTotal` - no separate "background skill profs" list to store,
+  toggle, or let drift out of sync with whatever background is picked.
+  - New `YARN.BACKGROUND_INFO` table in `app.rules.js`: skills, tool
+    proficiencies, bonus-language count, and the background's roleplay
+    feature for all 13 SRD backgrounds. `YARN.backgroundInfo(name)` looks
+    it up; `YARN.backgroundSkills(char)` in `app.core.js` is the single
+    source other code reads from.
+  - Sheet's Skills panel: background-granted skills now render checked +
+    disabled with a "background" badge, mirroring how class-granted saves
+    already render in the Saving Throws panel. New display-only
+    **Background panel** on the sheet lists granted skills, tool profs,
+    bonus languages, and the feature name (tools/languages/feature are
+    text only - Yarn has no tool-proficiency or language state to compute
+    against, same reasoning as the Species Traits panel).
+  - Wizard's background step now shows which two skills each background
+    grants right on the picker card, so the choice isn't blind.
+  - Coverage: 2 new assertions in `test_rules.py` (a Criminal's `deception`
+    total auto-includes proficiency; `backgroundSkills` returns the right
+    pair). Full suite now **142 green**.
 
 ---
 

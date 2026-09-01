@@ -234,15 +234,21 @@
   }
 
   function skillsPanel(char) {
+    var fromBg = YARN.backgroundSkills(char);
     var items = YARN.skillsFor(char).map(function (s) {
-      var isProf = char.skillProfs.indexOf(s.key) !== -1;
+      var isBg = fromBg.indexOf(s.key) !== -1;
+      var isProf = isBg || char.skillProfs.indexOf(s.key) !== -1;
       var isExp = char.skillExpertise.indexOf(s.key) !== -1;
       var custom = YARN.skillInfo(s.key) ? "" : ' <span class="badge hb-badge">hb</span>';
+      var profBox = isBg
+        ? '<input type="checkbox" checked disabled title="Granted by background">'
+        : '<input type="checkbox" data-prof="skill:' + s.key + '"' + (isProf ? " checked" : "") + ' title="Proficient">';
       return "<li>" +
-        '<input type="checkbox" data-prof="skill:' + s.key + '"' + (isProf ? " checked" : "") + ' title="Proficient">' +
+        profBox +
         '<input type="checkbox" data-prof="exp:' + s.key + '"' + (isExp ? " checked" : "") + ' title="Expertise">' +
         '<span class="grow">' + esc(s.name) +
-          ' <span class="muted" style="font-size:.65rem">(' + esc(s.ability) + ")</span>" + custom + "</span>" +
+          ' <span class="muted" style="font-size:.65rem">(' + esc(s.ability) + ")</span>" +
+          (isBg ? ' <span class="badge">background</span>' : "") + custom + "</span>" +
         '<span class="num pos" data-out="skill.' + s.key + '">+0</span></li>';
     }).join("");
     var hb = char.homebrew.enabled
@@ -288,6 +294,28 @@
       langs + traits + "</div>";
   }
 
+  // ---- render: background info (display-only) --------------------------
+  function backgroundPanel(char) {
+    var info = YARN.backgroundInfo(char.background);
+    if (!info) { return ""; }
+    var skillNames = YARN.backgroundSkills(char).map(function (k) {
+      var s = YARN.skillInfo(k);
+      return s ? s.name : k;
+    });
+    var tools = info.tools.length
+      ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Tools: " + info.tools.map(esc).join(", ") + "</p>"
+      : "";
+    var langs = info.languages
+      ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Languages: " + info.languages + " of your choice</p>"
+      : "";
+    return '<div class="panel"><h2>Background</h2>' +
+      '<p class="muted" style="font-size:.7rem;margin:.1rem 0 .3rem">Skills granted: ' +
+        skillNames.map(esc).join(", ") + "</p>" +
+      tools + langs +
+      '<p class="muted" style="font-size:.7rem;margin:.3rem 0"><b>' + esc(info.feature) + "</b> (feature - roleplay/DM adjudicated)</p>" +
+      "</div>";
+  }
+
   function resourcesPanel(char, prog) {
     if (!char.homebrew.enabled) { return ""; }
     var rows = char.homebrew.resources.map(function (r) {
@@ -328,7 +356,7 @@
         identityPanel(char, prog) +
         '<div>' + abilitiesPanel(char) + traitsPanel(char) + "</div>" +
         '<div>' + combatPanel(char, prog) + savesPanel(char) + currencyPanel(char, prog) + "</div>" +
-        '<div>' + skillsPanel(char) + resourcesPanel(char, prog) + "</div>" +
+        '<div>' + skillsPanel(char) + backgroundPanel(char) + resourcesPanel(char, prog) + "</div>" +
         "</div>";
     }
 

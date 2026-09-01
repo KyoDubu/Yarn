@@ -71,6 +71,30 @@
     "Hermit", "Noble", "Outlander", "Sage", "Sailor", "Soldier", "Urchin"
   ];
 
+  // Keyed by the same display name stored on the character (background has
+  // never had a separate key/name split - it's just a string). skills are
+  // ALWAYS granted (2014 PHB), never a player choice, so they can be baked
+  // straight into skillTotal the same way class saves are - no separate
+  // "which skills did my background give me" state to store or drift.
+  // tools/languages/feature are display-only text, same spirit as species
+  // traits: they never feed the math because Yarn has no tool-proficiency
+  // or language state to compute against yet.
+  YARN.BACKGROUND_INFO = {
+    "Acolyte":       { skills: ["insight", "religion"], tools: [], languages: 2, feature: "Shelter of the Faithful" },
+    "Charlatan":     { skills: ["deception", "sleightOfHand"], tools: ["Disguise kit", "Forgery kit"], languages: 0, feature: "False Identity" },
+    "Criminal":      { skills: ["deception", "stealth"], tools: ["One gaming set", "Thieves' tools"], languages: 0, feature: "Criminal Contact" },
+    "Entertainer":   { skills: ["acrobatics", "performance"], tools: ["Disguise kit", "One musical instrument"], languages: 0, feature: "By Popular Demand" },
+    "Folk Hero":     { skills: ["animalHandling", "survival"], tools: ["One artisan's tools", "Vehicles (land)"], languages: 0, feature: "Rustic Hospitality" },
+    "Guild Artisan": { skills: ["insight", "persuasion"], tools: ["One artisan's tools"], languages: 1, feature: "Guild Membership" },
+    "Hermit":        { skills: ["medicine", "religion"], tools: ["Herbalism kit"], languages: 1, feature: "Discovery" },
+    "Noble":         { skills: ["history", "persuasion"], tools: ["One gaming set"], languages: 1, feature: "Position of Privilege" },
+    "Outlander":     { skills: ["athletics", "survival"], tools: ["One musical instrument"], languages: 1, feature: "Wanderer" },
+    "Sage":          { skills: ["arcana", "history"], tools: [], languages: 2, feature: "Researcher" },
+    "Sailor":        { skills: ["athletics", "perception"], tools: ["Navigator's tools", "Vehicles (water)"], languages: 0, feature: "Ship's Passage" },
+    "Soldier":       { skills: ["athletics", "intimidation"], tools: ["One gaming set", "Vehicles (land)"], languages: 0, feature: "Military Rank" },
+    "Urchin":        { skills: ["sleightOfHand", "stealth"], tools: ["Disguise kit", "Thieves' tools"], languages: 0, feature: "City Secrets" }
+  };
+
   YARN.ALIGNMENTS = [
     "Lawful Good", "Neutral Good", "Chaotic Good",
     "Lawful Neutral", "True Neutral", "Chaotic Neutral",
@@ -162,6 +186,13 @@
   YARN.classInfo = function (key) { return byKey(YARN.CLASSES, key); };
   YARN.speciesInfo = function (key) { return byKey(YARN.SPECIES, key); };
   YARN.skillInfo = function (key) { return byKey(YARN.SKILLS, key); };
+
+  // Backgrounds are stored as a plain display-name string (never had a key),
+  // so the lookup is a straight object hit rather than byKey(). Missing/
+  // unrecognized names (e.g. blank, or a homebrew background typed in
+  // freehand later) degrade to null - callers already treat null as
+  // "grants nothing", same contract as speciesInfo/subspeciesInfo.
+  YARN.backgroundInfo = function (name) { return YARN.BACKGROUND_INFO[name] || null; };
 
   // A subrace lives nested under its parent species. Returns null if the
   // species has no subraces, or the key doesn't match one of them - both

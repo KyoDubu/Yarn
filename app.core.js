@@ -302,13 +302,23 @@
     return total;
   };
 
+  // Skills granted automatically by the character's background (2014 PHB:
+  // always fixed, never a player choice). Mirrors how class saves are baked
+  // into saveTotal - no separate "backgroundSkillProfs" list to store or let
+  // drift out of sync with the background you picked.
+  YARN.backgroundSkills = function (char) {
+    var info = char ? YARN.backgroundInfo(char.background) : null;
+    return info ? info.skills.slice() : [];
+  };
+
   YARN.skillTotal = function (char, prog, skillKey) {
     var skill = YARN.skillInfoFor(char, skillKey);
     if (!skill) { return 0; }
     var total = YARN.abilityMod(char, prog, skill.ability);
     var pb = YARN.profBonus(prog ? prog.level : 1);
+    var fromBackground = YARN.backgroundSkills(char).indexOf(skillKey) !== -1;
     if (char.skillExpertise.indexOf(skillKey) !== -1) { total += pb * 2; }
-    else if (char.skillProfs.indexOf(skillKey) !== -1) { total += pb; }
+    else if (fromBackground || char.skillProfs.indexOf(skillKey) !== -1) { total += pb; }
     return total;
   };
 
