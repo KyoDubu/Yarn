@@ -35,7 +35,16 @@
       personality: "",
       ideals: "",
       bonds: "",
-      flaws: ""
+      flaws: "",
+      // Opt-in extensions. When enabled:false this character is pure SRD and
+      // none of these lists affect any math. Homebrew is additive, never
+      // destructive - turning it off simply stops rendering the extras.
+      homebrew: {
+        enabled: false,
+        customSkills: [],   // [{ key, name, ability }] - ability must be an SRD key
+        currencies: [],     // [{ key, name }] - extra coin types, e.g. MP
+        resources: []       // [{ key, name }] - meters like Bardic Inspiration
+      }
     };
   };
 
@@ -66,6 +75,8 @@
       conditions: [],
       inventory: [],
       currency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+      currencyExtra: {},   // homebrew coin balances, keyed by currency key
+      resourcesUsed: {},   // homebrew meters: key -> { current, max }
       spellSlotsUsed: {},
       asi: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
       notes: "",
@@ -107,6 +118,10 @@
       blank.id = c.id || blank.id;
       fillDefaults(c, blank);
       c.abilities = fillDefaults(c.abilities || {}, blank.abilities);
+      c.homebrew = fillDefaults(c.homebrew || {}, blank.homebrew);
+      if (!Array.isArray(c.homebrew.customSkills)) { c.homebrew.customSkills = []; }
+      if (!Array.isArray(c.homebrew.currencies)) { c.homebrew.currencies = []; }
+      if (!Array.isArray(c.homebrew.resources)) { c.homebrew.resources = []; }
       return c;
     });
 
@@ -132,6 +147,8 @@
         bucket[cid].deathSaves = fillDefaults(bucket[cid].deathSaves || {}, blank.deathSaves);
         bucket[cid].currency = fillDefaults(bucket[cid].currency || {}, blank.currency);
         bucket[cid].asi = fillDefaults(bucket[cid].asi || {}, blank.asi);
+        if (!bucket[cid].currencyExtra || typeof bucket[cid].currencyExtra !== "object") { bucket[cid].currencyExtra = {}; }
+        if (!bucket[cid].resourcesUsed || typeof bucket[cid].resourcesUsed !== "object") { bucket[cid].resourcesUsed = {}; }
       });
     });
 
@@ -234,7 +251,7 @@
   };
 
   YARN.skillTotal = function (char, prog, skillKey) {
-    var skill = YARN.skillInfo(skillKey);
+    var skill = YARN.skillInfoFor(char, skillKey);
     if (!skill) { return 0; }
     var total = YARN.abilityMod(char, prog, skill.ability);
     var pb = YARN.profBonus(prog ? prog.level : 1);
@@ -245,6 +262,27 @@
 
   YARN.passivePerception = function (char, prog) {
     return 10 + YARN.skillTotal(char, prog, "perception");
+  };
+
+  // The skill list for a character: SRD skills, plus any homebrew custom
+  // skills when homebrew is enabled. One place decides what "a skill" is.
+  YARN.skillsFor = function (char) {
+    var list = YARN.SKILLS.slice();
+    if (char && char.homebrew && char.homebrew.enabled &&
+        Array.isArray(char.homebrew.customSkills)) {
+      char.homebrew.customSkills.forEach(function (s) {
+        if (s && s.key && s.ability) { list.push(s); }
+      });
+    }
+    return list;
+  };
+
+  YARN.skillInfoFor = function (char, key) {
+    var list = YARN.skillsFor(char);
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].key === key) { return list[i]; }
+    }
+    return null;
   };
 
   YARN.initiative = function (char, prog) {
@@ -332,7 +370,7 @@
       mods[k] = YARN.mod(scores[k]);
       saves[k] = YARN.saveTotal(char, prog, k);
     });
-    YARN.SKILLS.forEach(function (s) {
+    YARN.skillsFor(char).forEach(function (s) {
       skills[s.key] = YARN.skillTotal(char, prog, s.key);
     });
     return {

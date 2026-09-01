@@ -1,0 +1,145 @@
+/* app.css - Yarn character sheet styling.
+ * Hand-rolled, zero dependencies. Mobile-first: single column by default,
+ * widens to a multi-column sheet on larger screens. Mirrors the Budget
+ * Planner's "cards collapse under 640px" approach.
+ */
+:root {
+  --bg: #1b1720;
+  --panel: #262029;
+  --panel-2: #2f2833;
+  --ink: #efe8f0;
+  --muted: #b3a7bd;
+  --line: #453b4d;
+  --accent: #b5834f;      /* aged-parchment gold */
+  --accent-ink: #1b1720;
+  --danger: #c9556b;
+  --ok: #6bbf87;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+h1, h2, h3 { margin: 0 0 .4rem; font-weight: 600; }
+h1 { font-size: 1.15rem; letter-spacing: .5px; }
+h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
+
+a { color: var(--accent); }
+
+/* ---- top bar ---- */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  padding: .6rem .8rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar .brand { font-weight: 700; color: var(--accent); margin-right: .5rem; }
+.topbar select, .topbar button, .topbar input { min-height: 40px; }
+
+label { display: block; font-size: .7rem; color: var(--muted); margin-bottom: .15rem; }
+
+select, input, textarea, button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: .45rem .55rem;
+}
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+button { cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.ghost { background: transparent; }
+button.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: .9rem;
+  margin-bottom: 1rem;
+}
+
+.grid { display: grid; gap: 1rem; }
+@media (min-width: 760px) {
+  .sheet-grid { grid-template-columns: 1fr 1fr; }
+  .sheet-grid .span-2 { grid-column: 1 / -1; }
+}
+@media (min-width: 1000px) {
+  .sheet-grid { grid-template-columns: 260px 1fr 1fr; }
+}
+
+.row { display: flex; gap: .6rem; flex-wrap: wrap; }
+.row > * { flex: 1 1 120px; }
+.field { margin-bottom: .6rem; }
+
+/* ---- ability scores ---- */
+.abilities { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+@media (min-width: 760px) { .abilities { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .abilities { grid-template-columns: 1fr; } }
+.ability {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: .5rem;
+  text-align: center;
+  background: var(--panel-2);
+}
+.ability .name { font-size: .65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.ability .score { width: 100%; text-align: center; font-size: 1.3rem; font-weight: 700; }
+.ability .mod { font-size: 1rem; color: var(--accent); font-weight: 700; margin-top: .2rem; }
+
+/* ---- stat readouts ---- */
+.stat-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+.tile { border: 1px solid var(--line); border-radius: var(--radius); padding: .5rem; text-align: center; background: var(--panel-2); }
+.tile .big { font-size: 1.5rem; font-weight: 700; }
+.tile .lbl { font-size: .65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+/* ---- lists (saves / skills) ---- */
+.linelist { list-style: none; margin: 0; padding: 0; }
+.linelist li {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .3rem .2rem;
+  border-bottom: 1px solid var(--line);
+}
+.linelist li:last-child { border-bottom: none; }
+.linelist .grow { flex: 1; }
+.linelist .num { font-weight: 700; min-width: 2.2rem; text-align: right; }
+.linelist .num.pos::before { content: "+"; }
+.badge { font-size: .6rem; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 .3rem; }
+input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 999px; padding: .2rem .6rem; font-size: .8rem; margin: .15rem;
+}
+.hb-badge { color: var(--accent); }
+
+.muted { color: var(--muted); }
+.empty { text-align: center; padding: 2rem 1rem; color: var(--muted); }
+.hidden { display: none !important; }
+.hb-only { display: none; }
+.hb-on .hb-only { display: block; }
+
+.toggle-row { display: flex; align-items: center; gap: .6rem; }
+.toggle-row label { margin: 0; }

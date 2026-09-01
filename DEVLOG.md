@@ -139,6 +139,21 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
 ## Build log
 
 - **v1** - Project skeleton: git repo, data model, rules data, derived-stat math.
+- **v1.1** - Opt-in **homebrew layer** (additive, never destructive):
+  - `character.homebrew = { enabled, customSkills[], currencies[], resources[] }`.
+    When `enabled` is false, custom skills/currencies/resources are invisible and
+    SRD math is byte-for-byte unchanged.
+  - Custom skills compute exactly like SRD skills (`abilityMod + profBonus` when
+    proficient) and merge into `skillsFor` / `skillInfoFor` / `skillTotal` /
+    `derived().skills`.
+  - Per-campaign extra state: `progress.currencyExtra` (e.g. `mp`) and
+    `progress.resourcesUsed` (e.g. Bardic Inspiration current/max).
+  - Unknown species (not in the SRD table) degrade gracefully: base scores, no
+    ancestry ASI, no crash.
+  - `normalize()` backfills the homebrew block on legacy saves and round-trips
+    homebrew state on new ones.
+  - Coverage: `test_homebrew.py` (21 assertions, real modules in a real browser).
+    Full suite now **57 green** (36 SRD + 21 homebrew).
 
 ---
 
