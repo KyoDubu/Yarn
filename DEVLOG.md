@@ -2,6 +2,30 @@
 
 _Last updated: 2026-09-01 - Current build: **v1.3 "a whole bestiary of species"**_
 
+> ## Handoff note (session restart pending)
+> Tree is clean, everything committed through `beebd70` (v1.3). Nothing in
+> flight, nothing half-finished - safe to restart any time.
+>
+> **Full test suite: 140 assertions across 5 files, all green** -
+> `test_rules.py` (36), `test_homebrew.py` (21), `test_wizard.py` (33),
+> `test_wizard_e2e.py` (23), `test_species.py` (27). Re-run any of them with
+> `.venv\Scripts\python -u <file>.py`.
+>
+> **Open threads from the last session (D hasn't picked yet):**
+> 1. Background proficiencies aren't wired up - the wizard lets you *pick* a
+>    background (Acolyte, Soldier, etc.) but doesn't grant its skill/tool
+>    proficiencies onto the character yet.
+> 2. Draconic ancestry breath-weapon mechanics are recorded as trait *text*
+>    only (e.g. "Acid damage - 5x30 ft line, Dex save") - not an actual
+>    computed/rollable feature.
+> 3. Edition is still 2014 SRD (species-ASI) by default - D was shown the
+>    2024 rules (background-ASI) and hasn't confirmed a switch. See the
+>    "Key 2024 Rules Distinction" section below before touching ASI math.
+>
+> Everything else (character CRUD, campaigns, derived stats, homebrew layer,
+> creation wizard, 41 species/subraces with stacking ASI) is built and tested.
+> See the Build Log at the bottom for the full history.
+
 A single-page, offline-first **D&D character builder and campaign tracker**.
 Sibling project to the Budget Planner: same architecture, same Firebase project,
 same build/test discipline.
