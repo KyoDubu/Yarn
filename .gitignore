@@ -1,0 +1,26 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Env / secrets
+.env
+*.env
+serviceAccount*.json
+
+# Node (we do not use it, but just in case)
+node_modules/
+
+# Built artifacts (regenerate with build.py / build_pages.py)
+Yarn.html
+docs/
+
+# OS noise
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Personal character data - never commit real save files
+yarn-backup-*.json
+my_yarn_backup.json
