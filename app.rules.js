@@ -86,6 +86,47 @@
     "Lawful Evil", "Neutral Evil", "Chaotic Evil"
   ];
 
+  // ---- Ability score generation (2024 methods, usable under 2014) ------
+  // The three sanctioned ways to generate a stat line, plus the class
+  // suggestions the rulebook prints. Pure data - the math lives in core.
+  YARN.STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
+
+  // Point-buy cost table (27-point budget). Score -> points spent.
+  YARN.POINT_BUY_COST = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
+  YARN.POINT_BUY_BUDGET = 27;
+  YARN.POINT_BUY_MIN = 8;
+  YARN.POINT_BUY_MAX = 15;
+
+  // Suggested standard-array placement per class (str,dex,con,int,wis,cha).
+  // Straight from the rulebook's "assign these" table - a one-click starting
+  // point players can then tweak.
+  YARN.SUGGESTED_ARRAY = {
+    barbarian: { str: 15, dex: 13, con: 14, int: 10, wis: 12, cha: 8 },
+    bard:      { str: 8,  dex: 14, con: 12, int: 13, wis: 10, cha: 15 },
+    cleric:    { str: 14, dex: 8,  con: 13, int: 10, wis: 15, cha: 12 },
+    druid:     { str: 8,  dex: 12, con: 14, int: 13, wis: 15, cha: 10 },
+    fighter:   { str: 15, dex: 14, con: 13, int: 8,  wis: 10, cha: 12 },
+    monk:      { str: 12, dex: 15, con: 13, int: 10, wis: 14, cha: 8 },
+    paladin:   { str: 15, dex: 10, con: 13, int: 8,  wis: 12, cha: 14 },
+    ranger:    { str: 12, dex: 15, con: 13, int: 8,  wis: 14, cha: 10 },
+    rogue:     { str: 12, dex: 15, con: 13, int: 14, wis: 10, cha: 8 },
+    sorcerer:  { str: 10, dex: 13, con: 14, int: 8,  wis: 12, cha: 15 },
+    warlock:   { str: 8,  dex: 14, con: 13, int: 12, wis: 10, cha: 15 },
+    wizard:    { str: 8,  dex: 12, con: 13, int: 15, wis: 14, cha: 10 }
+  };
+
+  // ---- Random name fragments -----------------------------------------
+  // Cheap-and-cheerful fantasy name generator source. Two-part names:
+  // a prefix + a suffix. Not lore-accurate, just a spark to get unstuck.
+  YARN.NAME_PARTS = {
+    prefix: ["Aer", "Bran", "Cael", "Dor", "El", "Fen", "Gor", "Hal", "Ith",
+             "Kel", "Lor", "Mar", "Nyx", "Or", "Pyr", "Quen", "Rav", "Syl",
+             "Thal", "Ul", "Vor", "Wyn", "Xar", "Yr", "Zeph"],
+    suffix: ["ade", "ain", "ara", "eth", "ian", "iel", "ira", "is", "lyn",
+             "mir", "nor", "ric", "rin", "ros", "thas", "tia", "ven", "wyn",
+             "yll", "ys"]
+  };
+
   // ---- Conditions (SRD) ----------------------------------------------
   YARN.CONDITIONS = [
     "Blinded", "Charmed", "Deafened", "Frightened", "Grappled", "Incapacitated",

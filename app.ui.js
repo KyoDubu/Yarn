@@ -74,6 +74,10 @@
   }
 
   function topbar() {
+    var char = activeChar();
+    var cloneBtn = char
+      ? '<button class="ghost" data-action="clone-homebrew" title="Duplicate this character into a new homebrew copy">\u2398 Homebrew copy</button>'
+      : "";
     return '' +
       '<div class="topbar">' +
         '<span class="brand">\uD83E\uDDF6 Yarn</span>' +
@@ -82,6 +86,7 @@
           optionList(YARN.state.characters, ui().activeCharId, "\u2014 pick \u2014") +
           "</select></div>" +
         '<button class="ghost" data-action="new-char">+ Character</button>' +
+        cloneBtn +
         '<div><label for="selCamp">Campaign</label>' +
           '<select id="selCamp" data-action="pick-camp">' +
           optionList(YARN.state.campaigns, ui().activeCampaignId, "\u2014 pick \u2014") +
@@ -208,7 +213,7 @@
       return "<li>" + box +
         '<span class="grow">' + esc(a.name) +
         (classGranted ? ' <span class="badge">class</span>' : "") + "</span>" +
-        '<span class="num pos" data-out="save.' + a.key + '">+0</span></li>";
+        '<span class="num pos" data-out="save.' + a.key + '">+0</span></li>';
     }).join("");
     return '<div class="panel"><h2>Saving Throws</h2><ul class="linelist">' + items + "</ul></div>";
   }
@@ -223,7 +228,7 @@
         '<input type="checkbox" data-prof="exp:' + s.key + '"' + (isExp ? " checked" : "") + ' title="Expertise">' +
         '<span class="grow">' + esc(s.name) +
           ' <span class="muted" style="font-size:.65rem">(' + esc(s.ability) + ")</span>" + custom + "</span>" +
-        '<span class="num pos" data-out="skill.' + s.key + '">+0</span></li>";
+        '<span class="num pos" data-out="skill.' + s.key + '">+0</span></li>';
     }).join("");
     var hb = char.homebrew.enabled
       ? '<button class="ghost hb-only" data-action="add-skill" style="margin-top:.5rem">+ Custom skill</button>'
@@ -377,11 +382,23 @@
     if (action === "pick-camp") { ui().activeCampaignId = el.value || null; render(); return; }
 
     if (action === "new-char") {
-      var nc = YARN.blankCharacter();
-      nc.name = window.prompt("Character name?") || "New Character";
-      YARN.state.characters.push(nc);
-      ui().activeCharId = nc.id;
-      YARN.save(); render(); return;
+      YARN.Wizard.open({
+        onCreate: function (nc) {
+          YARN.state.characters.push(nc);
+          ui().activeCharId = nc.id;
+          YARN.save(); render();
+        }
+      });
+      return;
+    }
+    if (action === "clone-homebrew") {
+      if (!char) { return; }
+      var copy = YARN.cloneAsHomebrew(char.id);
+      if (copy) {
+        ui().activeCharId = copy.id;
+        YARN.save(); render();
+      }
+      return;
     }
     if (action === "new-camp") {
       var ncamp = YARN.blankCampaign();

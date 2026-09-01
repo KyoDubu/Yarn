@@ -388,4 +388,92 @@
       slots: YARN.spellSlots(char, prog)
     };
   };
+
+  // ---- dice ------------------------------------------------------------
+  // Every roller takes an optional rng so tests can feed a deterministic
+  // sequence. Default is Math.random. rng() must return [0, 1).
+  function defaultRng() { return Math.random(); }
+
+  YARN.rollDie = function (sides, rng) {
+    rng = rng || defaultRng;
+    return 1 + Math.floor(rng() * sides);
+  };
+
+  // Roll 4d6, drop the lowest, sum the rest. The classic stat-line roll.
+  YARN.roll4d6DropLowest = function (rng) {
+    rng = rng || defaultRng;
+    var rolls = [YARN.rollDie(6, rng), YARN.rollDie(6, rng),
+                 YARN.rollDie(6, rng), YARN.rollDie(6, rng)];
+    var sorted = rolls.slice().sort(function (a, b) { return a - b; });
+    return { rolls: rolls, dropped: sorted[0], total: sorted[1] + sorted[2] + sorted[3] };
+  };
+
+  // Six independent 4d6-drop-lowest results, ready to assign to abilities.
+  YARN.rollAbilitySet = function (rng) {
+    rng = rng || defaultRng;
+    var out = [];
+    for (var i = 0; i < 6; i++) { out.push(YARN.roll4d6DropLowest(rng)); }
+    return out;
+  };
+
+  // ---- point buy -------------------------------------------------------
+  // Cost of a single score under the 27-point system. Out-of-range scores
+  // cost Infinity, which makes any line containing one "invalid".
+  YARN.pointBuyCostFor = function (score) {
+    var c = YARN.POINT_BUY_COST[score];
+    return c === undefined ? Infinity : c;
+  };
+
+  YARN.pointBuySpent = function (scores) {
+    return YARN.ABILITY_KEYS.reduce(function (sum, k) {
+      return sum + YARN.pointBuyCostFor(Number(scores[k]));
+    }, 0);
+  };
+
+  YARN.pointBuyRemaining = function (scores) {
+    return YARN.POINT_BUY_BUDGET - YARN.pointBuySpent(scores);
+  };
+
+  YARN.pointBuyValid = function (scores) {
+    return YARN.pointBuySpent(scores) <= YARN.POINT_BUY_BUDGET;
+  };
+
+  // ---- random name -----------------------------------------------------
+  YARN.randomName = function (rng) {
+    rng = rng || defaultRng;
+    var p = YARN.NAME_PARTS.prefix, s = YARN.NAME_PARTS.suffix;
+    var a = p[Math.floor(rng() * p.length)];
+    var b = s[Math.floor(rng() * s.length)];
+    return a + b;
+  };
+
+  // ---- clone -----------------------------------------------------------
+  // Deep-copy a character's CORE identity (not per-campaign progress) into a
+  // brand-new record. opts.asHomebrew flips homebrew mode on; opts.nameSuffix
+  // is appended to the name. Returns the new character WITHOUT pushing it -
+  // the caller decides when to commit it to state.
+  YARN.cloneCharacter = function (charId, opts) {
+    var src = YARN.getCharacter(charId);
+    if (!src) { return null; }
+    opts = opts || {};
+    var copy = JSON.parse(JSON.stringify(src)); // structural deep copy
+    copy.id = YARN.uid("char");
+    if (opts.nameSuffix) { copy.name = (copy.name || "Unnamed") + opts.nameSuffix; }
+    // normalize() guarantees the homebrew block exists, but be defensive.
+    if (!copy.homebrew || typeof copy.homebrew !== "object") {
+      copy.homebrew = YARN.blankCharacter().homebrew;
+    }
+    if (opts.asHomebrew) { copy.homebrew.enabled = true; }
+    return copy;
+  };
+
+  // Clone as a homebrew variant, commit it to state, and return it. This is
+  // the "make a homebrew version of an existing character" action - the
+  // original is left completely untouched.
+  YARN.cloneAsHomebrew = function (charId) {
+    var copy = YARN.cloneCharacter(charId, { asHomebrew: true, nameSuffix: " (Homebrew)" });
+    if (!copy) { return null; }
+    YARN.state.characters.push(copy);
+    return copy;
+  };
 })(window.YARN = window.YARN || {});

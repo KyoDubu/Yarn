@@ -1,6 +1,6 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-01 - Current build: **v1 "skeleton"**_
+_Last updated: 2026-09-01 - Current build: **v1.2 "guided creation"**_
 
 A single-page, offline-first **D&D character builder and campaign tracker**.
 Sibling project to the Budget Planner: same architecture, same Firebase project,
@@ -51,18 +51,17 @@ the modules into one HTML file.
 
 | File | Role |
 |------|------|
-| `yarn.html` | Markup + CSS + `<script>` include order. The build inlines the JS. |
-| `app.core.js` | Data model, `YARN.state`, `normalize()`, save/load, derived-stat math. |
-| `app.rules.js` | Static 5e SRD data: abilities, skills, classes, species, conditions. |
-| `app.sheet.js` | Character sheet renderer. |
-| `app.campaign.js` | Campaign CRUD + the character/campaign progress bridge. |
-| `app.dice.js` | Dice roller (`2d6+3`, advantage/disadvantage, roll log). |
-| `app.main.js` | Tab wiring, event delegation, `init()`. |
-| `sw.js` | Service worker, network-first for navigations, versioned `CACHE`. |
-| `build.py` | -> `Yarn.html` (local offline, single file). |
-| `build_pages.py` | -> `docs/` (hosted PWA + cloud sync). |
+| `yarn.html` | Markup + `<script>` include order. Loads rules -> core -> wizard -> ui. |
+| `app.css` | All styling, hand-rolled, zero deps. Includes the wizard modal. |
+| `app.rules.js` | Static 5e SRD data + generation tables (standard array, point-buy, suggested arrays, name parts). |
+| `app.core.js` | Data model, `YARN.state`, `normalize()`, save/load, derived-stat math, dice, point-buy, clone. |
+| `app.wizard.js` | The guided character-creation wizard (modal step machine). |
+| `app.ui.js` | Top bar + character sheet renderer + all interaction wiring. |
 
-Everything hangs off the global `window.YARN` namespace.
+Everything hangs off the global `window.YARN` namespace. (Earlier drafts of this
+table listed `app.sheet.js` / `app.campaign.js` / `app.dice.js` / `app.main.js` /
+`sw.js` / `build.py` - those never materialised; the UI was consolidated into
+`app.ui.js` and dice live in `app.core.js`. PWA + build scripts are still TODO.)
 
 ### Data model (`YARN.state`)
 ```js
@@ -154,6 +153,28 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
     homebrew state on new ones.
   - Coverage: `test_homebrew.py` (21 assertions, real modules in a real browser).
     Full suite now **57 green** (36 SRD + 21 homebrew).
+- **v1.2** - **Guided character-creation wizard** + the app's first working UI.
+  - New `app.wizard.js`: a modal step machine walking the D&D 2024 creation
+    order (mode -> class -> species -> background -> abilities -> details ->
+    review), feeding Yarn's 2014 SRD math. Steps validate before you can
+    advance (e.g. every ability must be assigned).
+  - **Standard vs Homebrew** chosen up front; Homebrew starts with homebrew
+    mode on. New top-bar **"Homebrew copy"** button clones the active
+    character into a fresh homebrew variant (`YARN.cloneAsHomebrew`) - the
+    original is left untouched (deep copy).
+  - Ability scores four ways: **standard array**, **point buy** (27-pt, live
+    budget), **roll** (digital 4d6-drop-lowest *and* type-your-own physical
+    totals), and **manual**. Plus **auto-assign** by class and a **random
+    name** generator. Dice roller lives in `app.core.js` with an injectable
+    RNG so it is deterministically testable.
+  - Edition note: kept the **2014 species-ASI** model (unconfirmed default).
+    The D&D Beyond page D linked is the 2024 rules (background-ASI); a clean
+    seam is left to add that later.
+  - **Fixed a latent syntax error in `app.ui.js`** (two single-quoted strings
+    closed with `\"` instead of `'`, leaving them unterminated). The file had
+    never been browser-loaded, so the UI had never actually rendered until now.
+  - Coverage: `test_wizard.py` (33 assertions) + `test_wizard_e2e.py` (15,
+    full click-through of the real page). Full suite now **105 green**.
 
 ---
 
