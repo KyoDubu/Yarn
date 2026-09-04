@@ -12,10 +12,14 @@ serviceAccount*.json
 # Node (we do not use it, but just in case)
 node_modules/
 
-# Built artifacts, if/when build.py / build_pages.py materialise (see DEVLOG -
-# they don't exist yet, so yarn.html below is REAL hand-written source, not
-# an artifact - do not add it here).
-docs/
+# Built artifacts for GitHub Pages hosting - regenerate with build_pages.py.
+# NOTE: on this Windows machine, docs/ and Docs/ are the SAME physical folder
+# (case-insensitive filesystem) - it also held local-only reference material
+# (character sheet PDF/screenshot) used while building the app. Those are
+# excluded by name below rather than the whole folder, since the whole
+# folder needs to be tracked once it holds the real hosted build.
+docs/_cs2_page1.png
+docs/character sheet_2.pdf
 
 # OS noise
 Thumbs.db
