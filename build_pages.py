@@ -53,9 +53,15 @@ def main():
         if not src.exists():
             raise SystemExit("Missing asset folder referenced by yarn.html: " + name)
         dest = OUT / name
-        if dest.exists():
-            shutil.rmtree(dest)
-        shutil.copytree(src, dest)
+        # Copy file-by-file instead of rmtree+copytree: on this machine the
+        # docs/ tree lives under OneDrive, which can transiently hold a lock
+        # on a just-synced folder and make shutil.rmtree raise PermissionError.
+        # mkdir+overwrite is just as correct for our purposes (no files are
+        # ever removed from Static/ between builds) and avoids the lock.
+        dest.mkdir(parents=True, exist_ok=True)
+        for item in src.iterdir():
+            if item.is_file():
+                shutil.copyfile(item, dest / item.name)
 
     # GitHub Pages: skip Jekyll processing (needed since files start with "app.").
     (OUT / ".nojekyll").write_text("", encoding="utf-8")
