@@ -27,6 +27,7 @@
   var S = null;     // current wizard state
   var overlay = null;
   var onCreate = null;
+  var rollTimer = null;   // interval id for the dice-roll animation, if one is running
 
   // ---- helpers ---------------------------------------------------------
   function esc(s) {
@@ -55,6 +56,7 @@
       method: "standard",
       pool: YARN.STANDARD_ARRAY.slice(),
       poolMeta: [],       // parallel dice breakdowns for the roll method
+      rolling: false,     // true while the roll animation is mid-flight
       assign: assign,     // ability -> pool index (standard / roll)
       direct: direct,     // ability -> score (pointbuy / manual)
       name: "",
@@ -198,13 +200,24 @@
   }
 
   // Selects that assign pool slots to abilities (standard / roll methods).
+  // Slots already claimed by ANOTHER ability are shown disabled (with a
+  // "(used)" suffix) so you physically cannot create a silent duplicate -
+  // that used to be possible and just left "Next" disabled with zero
+  // explanation, because poolFullyAssigned() rejects a repeated index.
   function assignTable() {
     var speciesAsi = YARN.speciesASI(S);
+    var usedBy = {}; // pool index -> ability key currently holding it
+    YARN.ABILITY_KEYS.forEach(function (k) {
+      var idx = S.assign[k];
+      if (idx !== null && idx !== undefined) { usedBy[idx] = k; }
+    });
     var rows = YARN.ABILITY_KEYS.map(function (k) {
       var opts = '<option value="">\u2014</option>';
       S.pool.forEach(function (val, idx) {
+        var takenByOther = usedBy[idx] !== undefined && usedBy[idx] !== k;
         opts += '<option value="' + idx + '"' + (S.assign[k] === idx ? " selected" : "") +
-          ">" + val + "</option>";
+          (takenByOther ? " disabled" : "") + ">" + val +
+          (takenByOther ? " (used)" : "") + "</option>";
       });
       var idx = S.assign[k];
       var base = (idx === null || idx === undefined) ? null : Number(S.pool[idx]);
@@ -229,11 +242,23 @@
     var rows = YARN.ABILITY_KEYS.map(function (k) {
       var base = Number(S.direct[k]) || 8;
       var spB = speciesAsi[k] || 0;
-      var control = isBuy
-        ? '<button class="wz-step" data-wz="buy:' + k + ':-1" aria-label="decrease">\u2212</button>' +
+      var control;
+      if (isBuy) {
+        // 5e SRD point buy: 8-15 range, budget-gated. Both boundaries are
+        // shown disabled (not just silently inert) so a click that does
+        // nothing never happens - if it looks clickable, it must work.
+        var trialUp = Object.assign({}, S.direct); trialUp[k] = base + 1;
+        var atMax = base >= YARN.POINT_BUY_MAX;
+        var atMin = base <= YARN.POINT_BUY_MIN;
+        var cantAfford = !atMax && YARN.pointBuyRemaining(trialUp) < 0;
+        control = '<button class="wz-step" data-wz="buy:' + k + ':-1" aria-label="decrease"' +
+            (atMin ? " disabled" : "") + ">\u2212</button>" +
           '<span class="wz-buyval">' + base + "</span>" +
-          '<button class="wz-step" data-wz="buy:' + k + ':1" aria-label="increase">+</button>'
-        : '<input type="number" min="3" max="20" data-wz="manual:' + k + '" value="' + base + '">';
+          '<button class="wz-step" data-wz="buy:' + k + ':1" aria-label="increase"' +
+            ((atMax || cantAfford) ? " disabled" : "") + ">+</button>";
+      } else {
+        control = '<input type="number" min="3" max="20" data-wz="manual:' + k + '" value="' + base + '">';
+      }
       return "<tr><th>" + esc(abilityName(k)) + "</th>" +
         '<td class="wz-control">' + control + "</td>" +
         '<td class="wz-num">' + (spB ? "+" + spB : "\u2014") + "</td>" +
@@ -260,21 +285,25 @@
       var poolChips = S.pool.map(function (v, i) {
         var meta = S.poolMeta[i];
         var title = meta ? "rolled " + meta.rolls.join(",") + " drop " + meta.dropped : "";
-        return '<span class="wz-chip" title="' + esc(title) + '">' + v +
+        return '<span class="wz-chip' + (S.rolling ? " tumbling" : "") + '" title="' + esc(title) + '">' + v +
           (meta ? '<span class="wz-chip-sub">' + meta.rolls.join("\u00b7") + "</span>" : "") + "</span>";
       }).join("");
-      tools = '<button class="wz-btn primary" data-wz="roll-all">\uD83C\uDFB2 Roll 4d6 (drop lowest) \u00d76</button>';
+      tools = '<button class="wz-btn primary" data-wz="roll-all"' + (S.rolling ? " disabled" : "") + ">" +
+        (S.rolling ? "\uD83C\uDFB2 Rolling\u2026" : "\uD83C\uDFB2 Roll 4d6 (drop lowest) \u00d76") + "</button>";
       body += "<p class='wz-help'>" + help + "</p>" +
         '<div class="wz-roll-bar">' + tools + '<div class="wz-pool">' + poolChips + "</div></div>" +
         '<p class="wz-help muted">Or type your own six totals:</p>' +
         '<div class="wz-pool-inputs">' + S.pool.map(function (v, i) {
-          return '<input type="number" min="3" max="18" data-wz="pool:' + i + '" value="' + v + '">';
+          return '<input type="number" min="3" max="18" data-wz="pool:' + i + '"' +
+            (S.rolling ? " disabled" : "") + ' value="' + v + '">';
         }).join("") + "</div>" +
         assignTable();
     } else if (S.method === "pointbuy") {
       var remaining = YARN.pointBuyRemaining(S.direct);
       var over = remaining < 0;
-      help = "Spend 27 points. Each score starts at 8; 14 and 15 cost extra.";
+      help = "Spend 27 points. Each score starts at 8; 14 and 15 cost extra. " +
+        "15 is the max score point buy can reach (SRD rule) - species bonuses " +
+        "apply on top, in the Species column.";
       body += "<p class='wz-help'>" + help + "</p>" +
         '<p class="wz-points' + (over ? " over" : "") + '">Points remaining: <b>' + remaining + "</b>" +
         (over ? " (over budget!)" : "") + "</p>" + directTable();
@@ -408,11 +437,45 @@
     close();
   }
 
+  // Rolls 4d6-drop-lowest x6 for real (via YARN.rollAbilitySet), but shows a
+  // brief tumbling animation first - a few ticks of random junk numbers in
+  // the pool chips - before landing on the real result. Purely cosmetic:
+  // the actual dice math never runs more than once, so nothing here can
+  // change what score you end up with, only how it's revealed.
+  function stopRollAnimation() {
+    if (rollTimer) { clearInterval(rollTimer); rollTimer = null; }
+    if (S) { S.rolling = false; }
+  }
+  function startRollAnimation() {
+    var ticks = 0;
+    var TOTAL_TICKS = 8;
+    S.rolling = true;
+    YARN.ABILITY_KEYS.forEach(function (a) { S.assign[a] = null; }); // reset assignment up front
+    render();
+    rollTimer = setInterval(function () {
+      ticks++;
+      if (ticks >= TOTAL_TICKS) {
+        clearInterval(rollTimer);
+        rollTimer = null;
+        var set = YARN.rollAbilitySet();
+        S.pool = set.map(function (r) { return r.total; });
+        S.poolMeta = set;
+        S.rolling = false;
+        render();
+        return;
+      }
+      // Junk values just for the tumble effect - never touches poolMeta,
+      // so there is no chance of a fake breakdown leaking into the tooltip.
+      S.pool = S.pool.map(function () { return 3 + Math.floor(Math.random() * 16); });
+      render();
+    }, 80);
+  }
+
   function dispatch(cmd, args, el) {
     switch (cmd) {
       case "cancel": close(); return;
-      case "back": if (S.step > 0) { S.step--; render(); } return;
-      case "next": if (canAdvance() && S.step < STEPS.length - 1) { S.step++; render(); } return;
+      case "back": if (S.step > 0) { stopRollAnimation(); S.step--; render(); } return;
+      case "next": if (canAdvance() && S.step < STEPS.length - 1) { stopRollAnimation(); S.step++; render(); } return;
       case "create": commit(); return;
 
       case "pick":
@@ -435,6 +498,7 @@
       case "sub-scrim": S.subModalOpen = false; render(); return;
 
       case "method":
+        stopRollAnimation();
         S.method = args[0];
         render(); return;
 
@@ -461,11 +525,9 @@
         render(); return;
 
       case "roll-all": {
-        var set = YARN.rollAbilitySet();
-        S.pool = set.map(function (r) { return r.total; });
-        S.poolMeta = set;
-        YARN.ABILITY_KEYS.forEach(function (a) { S.assign[a] = null; }); // reset assignment
-        render(); return;
+        if (S.rolling) { return; } // already mid-animation, ignore extra clicks
+        startRollAnimation();
+        return;
       }
       case "suggest": {
         var arr = YARN.SUGGESTED_ARRAY[S.klass];
@@ -503,6 +565,7 @@
   // ---- open / close ----------------------------------------------------
   function close() {
     if (!overlay) { return; }
+    stopRollAnimation();
     document.removeEventListener("keydown", onKey);
     overlay.remove();
     overlay = null;

@@ -1,14 +1,15 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-01 - Current build: **v1.5 "subraces get their own room"**_
+_Last updated: 2026-09-04 - Current build: **v1.6 "the abilities step stops lying to you"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.5. Nothing in
+> Tree is clean, everything committed through v1.6. Nothing in
 > flight, nothing half-finished - safe to restart any time.
 >
-> **Full test suite: 146 assertions across 5 files, all green** -
+> **Full test suite: 158 assertions across 6 files, all green** -
 > `test_rules.py` (38), `test_homebrew.py` (21), `test_wizard.py` (33),
-> `test_wizard_e2e.py` (27), `test_species.py` (27). Re-run any of them with
+> `test_wizard_e2e.py` (27), `test_species.py` (27),
+> `test_wizard_abilities_e2e.py` (12, new). Re-run any of them with
 > `.venv\Scripts\python -u <file>.py`.
 >
 > **Open threads from the last session (D hasn't picked yet):**
@@ -270,6 +271,35 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
   - Coverage: 4 new assertions in `test_wizard_e2e.py` (auto-open, blocked
     Next until chosen, auto-close on pick, reopen/Done roundtrip). Full
     suite now **146 green**.
+- **v1.6** - **Abilities step stops lying to you.** Three usability bugs in
+  "Determine Ability Scores," fixed:
+  - **Standard array duplicate-slot guard.** You could silently assign the
+    same pool value (e.g. "15") to two different abilities. Nothing warned
+    you, and "Next" just stayed disabled forever because
+    `poolFullyAssigned()` correctly rejects a repeated slot - it just never
+    told you why. Now `assignTable()` disables any option already claimed
+    by *another* ability (labeled "(used)"), so a duplicate is no longer
+    physically selectable.
+  - **Point buy's stepper buttons now reflect their own limits.** The 8-15
+    cap is correct 5e SRD (it is not a bug that you cannot buy a 16 -
+    species bonuses stack on top, shown in the Species column) but the +/-
+    buttons previously gave zero feedback at the boundary - clicking + at
+    15 just silently did nothing. They are real `disabled` buttons now at
+    the floor (8), the cap (15), and when the remaining budget cannot
+    afford the next point. Help text spells out the 15-cap explicitly.
+  - **Dice-roll animation.** "Roll 4d6 (drop lowest) x6" used to just swap
+    numbers instantly. It now runs a tumble - the six pool chips cycle
+    random junk values with a CSS rotate/scale animation - before landing
+    on the one real `YARN.rollAbilitySet()` result. The dice math itself
+    still runs exactly once; the animation is cosmetic ticks on top, so
+    nothing about determinism or testability changed. Respects
+    `prefers-reduced-motion`. The roll button and pool inputs disable
+    themselves mid-animation, and switching method tabs, stepping
+    back-or-forward, or closing the wizard mid-roll all cleanly cancel the
+    timer instead of leaking it.
+  - Coverage: new `test_wizard_abilities_e2e.py` (12 assertions covering
+    dup-slot disabling, point-buy boundary disabling, and roll animation
+    start/finish/cleanup). Full suite now **158 green** across 6 files.
 
 ---
 

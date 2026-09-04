@@ -220,6 +220,23 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 .wz-pool-inputs { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .6rem; }
 .wz-pool-inputs input { width: 3.4rem; text-align: center; }
 
+/* dice-roll animation: chips "tumble" (scale + rotate jitter) while the
+   wizard is mid-roll, landing back flat once the real result is set. */
+.wz-chip.tumbling {
+  animation: wz-tumble .16s ease-in-out infinite;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+@keyframes wz-tumble {
+  0%   { transform: rotate(0deg) scale(1); }
+  35%  { transform: rotate(-8deg) scale(1.08); }
+  70%  { transform: rotate(7deg) scale(1.05); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wz-chip.tumbling { animation: none; }
+}
+
 .wz-field { margin-bottom: .7rem; }
 .wz-inline { display: flex; gap: .4rem; }
 .wz-inline input { flex: 1; }
