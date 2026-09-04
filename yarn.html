@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yarn &mdash; D&amp;D Character Sheets</title>
+  <meta name="description" content="Yarn: offline-first D&D 5e character sheets, one character across many campaigns.">
+  <link rel="stylesheet" href="app.css">
+
+  <!-- Cloud sync (optional, offline-first without it). Same Firebase
+       project as the Budget Planner sibling app ("kyodububb") - own
+       Firestore collection ("yarnParties"), so the two apps' data can
+       never collide even though they share a project. This web config is
+       public by design; real security lives in firestore.rules. -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script>window.__YARN_FB_CONFIG__ = {"apiKey": "AIzaSyD5oVhg7Mk-fSqzsqccllm298z4mwDqn_k", "authDomain": "kyodububb.firebaseapp.com", "projectId": "kyodububb", "storageBucket": "kyodububb.firebasestorage.app", "messagingSenderId": "48543696658", "appId": "1:48543696658:web:934b03fe0b03cf0652d5cb"};</script>
+</head>
+<body>
+  <main id="app">
+    <!-- rendered by app.ui.js -->
+    <noscript><p style="padding:2rem">Yarn needs JavaScript enabled.</p></noscript>
+  </main>
+
+  <!-- Load order matters: rules/species (data) -> core (model+math) -> wizard -> sync -> ui (render, boots sync last). -->
+  <script src="app.rules.js"></script>
+  <script src="app.species.js"></script>
+  <script src="app.core.js"></script>
+  <script src="app.wizard.js"></script>
+  <script src="app.sync.js"></script>
+  <script src="app.ui.js"></script>
+</body>
+</html>

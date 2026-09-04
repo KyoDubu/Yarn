@@ -507,6 +507,7 @@
     document.addEventListener("change", onEdit);
     document.addEventListener("click", onClick);
     render();
+    if (typeof YARN.initSync === "function") { YARN.initSync(); }
   };
 
   if (document.readyState === "loading") {

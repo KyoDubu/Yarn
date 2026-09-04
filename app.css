@@ -282,3 +282,17 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 }
 .wz-submodal .wz-head { justify-content: space-between; }
 .wz-submodal h3 { margin: 0; font-size: 1rem; color: var(--ink); }
+
+/* ---- cloud sync widget (mounted once onto <body>, survives full re-renders) ---- */
+.sync-widget { position: fixed; right: 1rem; bottom: 1rem; z-index: 90; max-width: min(360px, calc(100vw - 2rem)); }
+.sync-toggle {
+  border-radius: 999px; padding: .5rem 1rem; box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+  background: var(--panel); border: 1px solid var(--line);
+}
+.sync-panel { margin-top: .5rem; max-height: min(70vh, 480px); overflow-y: auto; }
+.sync-panel h2 { font-size: .95rem; }
+.sync-panel .linelist { font-size: .82rem; margin: .2rem 0 .6rem; }
+.sync-panel button { margin: .2rem .3rem .2rem 0; }
+@media (max-width: 480px) {
+  .sync-widget { left: 1rem; right: 1rem; max-width: none; }
+}

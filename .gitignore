@@ -12,8 +12,9 @@ serviceAccount*.json
 # Node (we do not use it, but just in case)
 node_modules/
 
-# Built artifacts (regenerate with build.py / build_pages.py)
-Yarn.html
+# Built artifacts, if/when build.py / build_pages.py materialise (see DEVLOG -
+# they don't exist yet, so yarn.html below is REAL hand-written source, not
+# an artifact - do not add it here).
 docs/
 
 # OS noise

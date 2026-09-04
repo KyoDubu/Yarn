@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Yarn's cloud-sync collection. Lives in the SAME Firebase project as
+    // the Budget Planner sibling app ("kyodububb") but in its own
+    // collection, so these rules only ever apply to Yarn's documents -
+    // they cannot grant or restrict access to Budget's "households" docs,
+    // and vice versa. Paste this alongside Budget's existing rules in the
+    // Firebase console (Firestore -> Rules); both `match` blocks coexist.
+    //
+    // One document per party (ID = the owner's user id). Access is granted
+    // by EMAIL: your Google email must be in "members".
+    match /yarnParties/{pid} {
+
+      // Read (get + the array-contains query) only if you're a member.
+      allow read: if request.auth != null
+                  && request.auth.token.email.lower() in resource.data.members;
+
+      // The owner creates their own party and must list themselves.
+      allow create: if request.auth != null
+                    && request.auth.uid == pid
+                    && request.auth.token.email.lower() in request.resource.data.members
+                    && request.resource.data.state is string;
+
+      // Any current member can update (save data, invite others).
+      allow update: if request.auth != null
+                    && request.auth.token.email.lower() in resource.data.members
+                    && request.resource.data.state is string;
+
+      allow delete: if false;
+    }
+  }
+}
