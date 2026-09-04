@@ -1,29 +1,42 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-04 - Current build: **v1.6 "the abilities step stops lying to you"**_
+_Last updated: 2026-09-04 - Current build: **v1.7 "cloud sync joins the party"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.6. Nothing in
+> Tree is clean, everything committed through v1.7. Nothing in
 > flight, nothing half-finished - safe to restart any time.
 >
-> **Full test suite: 158 assertions across 6 files, all green** -
+> **Full test suite: 170 assertions across 7 files, all green** -
 > `test_rules.py` (38), `test_homebrew.py` (21), `test_wizard.py` (33),
 > `test_wizard_e2e.py` (27), `test_species.py` (27),
-> `test_wizard_abilities_e2e.py` (12, new). Re-run any of them with
-> `.venv\Scripts\python -u <file>.py`.
+> `test_wizard_abilities_e2e.py` (12), `test_sync_mock.py` (12, new).
+> Re-run any of them with `.venv\Scripts\python -u <file>.py`.
 >
-> **Open threads from the last session (D hasn't picked yet):**
+> **Housekeeping note:** `yarn.html` was silently gitignored this whole
+> time (Windows git case-folded a leftover `Yarn.html` build-artifact rule
+> from Budget's `.gitignore` onto it) - it's the real hand-written source,
+> not a generated file, since `build.py` doesn't exist yet. Fixed and
+> `yarn.html` is now tracked for real as of v1.7. If anything before this
+> commit looked "clean" in git, the actual game file wasn't in it.
+>
+> **Open threads from prior sessions (D hasn't picked yet):**
 > 1. Draconic ancestry breath-weapon mechanics are recorded as trait *text*
 >    only (e.g. "Acid damage - 5x30 ft line, Dex save") - not an actual
 >    computed/rollable feature.
 > 2. Edition is still 2014 SRD (species-ASI) by default - D was shown the
 >    2024 rules (background-ASI) and hasn't confirmed a switch. See the
 >    "Key 2024 Rules Distinction" section below before touching ASI math.
+> 3. Cloud sync (v1.7) ships with a real public Firebase web config wired
+>    up already, but the `firestore.rules` for the new `yarnParties`
+>    collection still need to be pasted into the Firebase console by hand
+>    (no `firebase`/`gcloud` CLI in this environment) before sign-in will
+>    actually work end-to-end for real users. Until then, sign-in will
+>    open Google's popup fine but Firestore reads/writes will be rejected.
 >
 > Everything else (character CRUD, campaigns, derived stats, homebrew layer,
 > creation wizard, 41 species/subraces with stacking ASI, background
-> proficiencies, subrace picker popup) is built and tested. See the Build
-> Log at the bottom for the full history.
+> proficiencies, subrace picker popup, ability-score usability fixes) is
+> built and tested. See the Build Log at the bottom for the full history.
 
 A single-page, offline-first **D&D character builder and campaign tracker**.
 Sibling project to the Budget Planner: same architecture, same Firebase project,
@@ -80,6 +93,7 @@ the modules into one HTML file.
 | `app.species.js` | Species + subspecies (subrace) data: size/speed/ASI/traits/languages. Big domain, own file. |
 | `app.core.js` | Data model, `YARN.state`, `normalize()`, save/load, derived-stat math, dice, point-buy, clone. |
 | `app.wizard.js` | The guided character-creation wizard (modal step machine). |
+| `app.sync.js` | Firebase Auth (Google) + Firestore party sync. Optional - no-ops offline. |
 | `app.ui.js` | Top bar + character sheet renderer + all interaction wiring. |
 
 Everything hangs off the global `window.YARN` namespace. (Earlier drafts of this
@@ -300,6 +314,45 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
   - Coverage: new `test_wizard_abilities_e2e.py` (12 assertions covering
     dup-slot disabling, point-buy boundary disabling, and roll animation
     start/finish/cleanup). Full suite now **158 green** across 6 files.
+- **v1.7** - **Cloud sync joins the party.** Mirrors the Budget Planner's
+  Firebase Auth + Firestore household-sync architecture almost exactly -
+  same trusted Google-login project (`kyodububb`), same "shared document,
+  invite by email" model - but reuses none of Budget's collection, so the
+  two apps' data can never collide even though they share a project.
+  - New `app.sync.js`, own Firestore collection `yarnParties`. A "party"
+    doc holds the JSON-serialized `YARN.state` plus a `members` array of
+    lowercased emails; anyone in `members` sees the same roster/campaigns
+    live, on every device.
+  - Sign in with Google -> no party yet -> "Create our party" -> invite
+    your DM/players by email or copy a shareable invite link. Re-creating
+    an existing party reconnects instead of wiping it (same regression
+    Budget had to guard against).
+  - Own-write echo detection (skip re-render when a Firestore snapshot is
+    just your own save bouncing back) plus a focus-preserving deferred-
+    apply guard: a genuine remote change that arrives while you're mid-
+    edit in a field is held until you leave that field, so your cursor
+    never gets yanked out from under you.
+  - Widget mounts once onto `document.body` (same pattern `app.wizard.js`
+    uses for its modal overlay) so `app.ui.js`'s full-page re-renders can
+    never wipe out the sync panel or blow away its open/closed state.
+  - Fully optional and safe offline: `yarn.html` loads the Firebase SDK +
+    a public web config; if that fails (no network, blocked, ad-blocker),
+    `YARN.hasSync()` is false and `YARN.initSync` becomes a no-op - the
+    app behaves exactly as it always has, with zero console errors
+    (verified via a real non-mocked headless-browser boot check).
+  - New `firestore.rules` for the `yarnParties` collection - needs to be
+    pasted into the Firebase console by hand (no `firebase`/`gcloud` CLI
+    available here) before real sign-in will work end-to-end.
+  - Coverage: new `test_sync_mock.py` (12 assertions, mocked Firebase -
+    mirrors Budget's `test_auth_mock.py` pattern). Full suite now
+    **170 green** across 7 files.
+  - **Bonus fix, unrelated but found along the way:** `yarn.html` had been
+    silently gitignored this entire project (Windows git case-folded a
+    leftover `Yarn.html` build-artifact rule copied from Budget's
+    `.gitignore`, even though Yarn has no build step yet per this very
+    file). Every prior "clean tree" commit never actually included the
+    real game file. Fixed the `.gitignore` and committed `yarn.html` for
+    real.
 
 ---
 
