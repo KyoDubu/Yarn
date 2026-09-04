@@ -80,7 +80,7 @@
       : "";
     return '' +
       '<div class="topbar">' +
-        '<span class="brand">\uD83E\uDDF6 Yarn</span>' +
+        '<span class="brand"><img src="Static/yarn.png" alt="" class="brand-logo">Yarn</span>' +
         '<div><label for="selChar">Character</label>' +
           '<select id="selChar" data-action="pick-char">' +
           optionList(YARN.state.characters, ui().activeCharId, "\u2014 pick \u2014") +

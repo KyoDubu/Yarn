@@ -46,7 +46,8 @@ a { color: var(--accent); }
   top: 0;
   z-index: 10;
 }
-.topbar .brand { font-weight: 700; color: var(--accent); margin-right: .5rem; }
+.topbar .brand { font-weight: 700; color: var(--accent); margin-right: .5rem; display: inline-flex; align-items: center; gap: .4rem; }
+.topbar .brand-logo { height: 28px; width: 28px; display: block; }
 .topbar select, .topbar button, .topbar input { min-height: 40px; }
 
 label { display: block; font-size: .7rem; color: var(--muted); margin-bottom: .15rem; }

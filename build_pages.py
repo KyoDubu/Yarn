@@ -30,6 +30,11 @@ ASSETS = [
     "app.ui.js",
 ]
 
+# Subfolders referenced by yarn.html (e.g. the logo/icon), copied whole.
+ASSET_DIRS = [
+    "Static",
+]
+
 
 def main():
     OUT.mkdir(exist_ok=True)
@@ -42,6 +47,15 @@ def main():
         if not src.exists():
             raise SystemExit("Missing asset referenced by yarn.html: " + name)
         shutil.copyfile(src, OUT / name)
+
+    for name in ASSET_DIRS:
+        src = pathlib.Path(name)
+        if not src.exists():
+            raise SystemExit("Missing asset folder referenced by yarn.html: " + name)
+        dest = OUT / name
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.copytree(src, dest)
 
     # GitHub Pages: skip Jekyll processing (needed since files start with "app.").
     (OUT / ".nojekyll").write_text("", encoding="utf-8")
