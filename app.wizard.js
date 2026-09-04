@@ -60,7 +60,8 @@
       name: "",
       alignment: "True Neutral",
       personality: "",
-      backstory: ""
+      backstory: "",
+      subModalOpen: false   // is the subrace-picker popup currently showing?
     };
   }
 
@@ -132,18 +133,41 @@
       return { key: s.key, name: s.name, hint: s.size + " \u00b7 " + s.speed + "ft \u00b7 " + asiText(s.asi) + tag };
     });
     var species = YARN.speciesInfo(S.species);
-    var subBlock = "";
+    var subLine = "";
     if (species && Array.isArray(species.subraces) && species.subraces.length) {
-      var subs = species.subraces.map(function (r) {
-        return { key: r.key, name: r.name, hint: asiText(r.asi) + (r.speed ? " \u00b7 " + r.speed + "ft" : "") };
-      });
-      subBlock = '<p class="wz-lead">Choose a subrace of ' + esc(species.name) +
-        " - its bonus stacks on top of the base species.</p>" +
-        '<div class="wz-cards wz-cards-grid">' + radioCards(subs, S.subspecies, "subspecies", "key", "name", "hint") + "</div>";
+      var sub = YARN.subspeciesInfo(S.species, S.subspecies);
+      subLine = '<div class="wz-subrace-bar">' +
+        (sub
+          ? '<span class="wz-subrace-chosen">Subrace: <b>' + esc(sub.name) + "</b> (" + asiText(sub.asi) + ")</span>"
+          : '<span class="wz-subrace-chosen wz-subrace-missing">No subrace chosen yet</span>') +
+        '<button class="wz-btn" data-wz="open-subrace">' + (sub ? "Change subrace" : "Choose subrace") + "</button>" +
+        "</div>";
     }
     return '<p class="wz-lead">Species sets your size, speed and (in the 2014 rules Yarn uses) your ability bonuses.</p>' +
       '<div class="wz-cards wz-cards-grid">' + radioCards(sp, S.species, "species", "key", "name", "hint") + "</div>" +
-      subBlock;
+      subLine;
+  }
+
+  // Standalone popup for picking a subrace - opened automatically the moment
+  // a species with subraces is chosen, and reopenable via "Change subrace".
+  // Lives on top of the wizard modal rather than inline in the species list
+  // so a 41-species grid doesn't grow a second grid underneath it.
+  function subModalMarkup() {
+    var species = YARN.speciesInfo(S.species);
+    if (!species || !Array.isArray(species.subraces) || !species.subraces.length) { return ""; }
+    var subs = species.subraces.map(function (r) {
+      return { key: r.key, name: r.name, hint: asiText(r.asi) + (r.speed ? " \u00b7 " + r.speed + "ft" : "") };
+    });
+    return '<div class="wz-suboverlay" data-wz="sub-scrim">' +
+      '<div class="wz-submodal" role="dialog" aria-modal="true" aria-labelledby="wzSubTitle" data-wz-stop="1">' +
+        '<div class="wz-head"><h3 id="wzSubTitle">Choose a subrace of ' + esc(species.name) + "</h3>" +
+          '<button class="wz-x" data-wz="close-subrace" aria-label="Close">\u00d7</button></div>' +
+        '<p class="wz-lead">Its bonus stacks on top of the base species.</p>' +
+        '<div class="wz-cards wz-cards-grid">' + radioCards(subs, S.subspecies, "subspecies", "key", "name", "hint") + "</div>" +
+        '<div class="wz-foot"><div class="wz-spacer"></div>' +
+          '<button class="wz-btn primary" data-wz="close-subrace"' + (S.subspecies ? "" : " disabled") + ">Done</button></div>" +
+      "</div>" +
+    "</div>";
   }
 
   function stepBackground() {
@@ -353,14 +377,22 @@
           ? '<button class="wz-btn primary" data-wz="create">Create character</button>'
           : '<button class="wz-btn primary" data-wz="next"' + (canAdvance() ? "" : " disabled") + ">Next</button>") +
       "</div>";
-    var focusable = overlay.querySelector(".wz-body input, .wz-body select, .wz-body button");
-    if (focusable) { focusable.focus(); }
+    var subHost = overlay.querySelector(".wz-sub-host");
+    subHost.innerHTML = (stepKey === "species" && S.subModalOpen) ? subModalMarkup() : "";
+    var focusTarget = subHost.querySelector("button, input, select") ||
+      overlay.querySelector(".wz-body input, .wz-body select, .wz-body button");
+    if (focusTarget) { focusTarget.focus(); }
   }
 
   // ---- events ----------------------------------------------------------
   function onOverlayClick(e) {
     var el = e.target.closest("[data-wz]");
     if (!el) { return; }
+    // A click anywhere inside the subrace popup body (data-wz-stop) bubbles
+    // up looking for its nearest [data-wz] owner, which is the scrim itself
+    // when the click lands on plain text/whitespace. Only an actual click
+    // on the backdrop (outside data-wz-stop) should close the popup.
+    if (el.getAttribute("data-wz") === "sub-scrim" && e.target.closest("[data-wz-stop]")) { return; }
     var parts = el.getAttribute("data-wz").split(":");
     dispatch(parts[0], parts.slice(1), el);
   }
@@ -370,7 +402,11 @@
     var parts = el.getAttribute("data-wz").split(":");
     dispatch(parts[0], parts.slice(1), el);
   }
-  function onKey(e) { if (e.key === "Escape") { close(); } }
+  function onKey(e) {
+    if (e.key !== "Escape") { return; }
+    if (S && S.subModalOpen) { S.subModalOpen = false; render(); return; }
+    close();
+  }
 
   function dispatch(cmd, args, el) {
     switch (cmd) {
@@ -381,8 +417,22 @@
 
       case "pick":
         S[args[0]] = args[1];
-        if (args[0] === "species") { S.subspecies = ""; } // new species, blank slate for subrace
+        if (args[0] === "species") {
+          S.subspecies = ""; // new species, blank slate for subrace
+          var picked = YARN.speciesInfo(args[1]);
+          // Auto-open the subrace popup the moment a species that has one
+          // is chosen - matches the rulebook: subraces aren't optional
+          // where they exist, so don't make the player go hunting for them.
+          S.subModalOpen = !!(picked && Array.isArray(picked.subraces) && picked.subraces.length);
+        }
+        if (args[0] === "subspecies") {
+          S.subModalOpen = false; // picking one is the only thing to do in there - close it
+        }
         render(); return;
+
+      case "open-subrace": S.subModalOpen = true; render(); return;
+      case "close-subrace": S.subModalOpen = false; render(); return;
+      case "sub-scrim": S.subModalOpen = false; render(); return;
 
       case "method":
         S.method = args[0];
@@ -468,7 +518,8 @@
 
     overlay = document.createElement("div");
     overlay.className = "wz-overlay";
-    overlay.innerHTML = '<div class="wz-modal" role="dialog" aria-modal="true" aria-labelledby="wzTitle"></div>';
+    overlay.innerHTML = '<div class="wz-modal" role="dialog" aria-modal="true" aria-labelledby="wzTitle"></div>' +
+      '<div class="wz-sub-host"></div>';
     overlay.addEventListener("click", onOverlayClick);
     overlay.addEventListener("input", onOverlayInput);
     overlay.addEventListener("change", onOverlayInput);

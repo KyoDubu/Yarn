@@ -1,14 +1,14 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-01 - Current build: **v1.4 "backgrounds pull their weight"**_
+_Last updated: 2026-09-01 - Current build: **v1.5 "subraces get their own room"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.4. Nothing in
+> Tree is clean, everything committed through v1.5. Nothing in
 > flight, nothing half-finished - safe to restart any time.
 >
-> **Full test suite: 142 assertions across 5 files, all green** -
+> **Full test suite: 146 assertions across 5 files, all green** -
 > `test_rules.py` (38), `test_homebrew.py` (21), `test_wizard.py` (33),
-> `test_wizard_e2e.py` (23), `test_species.py` (27). Re-run any of them with
+> `test_wizard_e2e.py` (27), `test_species.py` (27). Re-run any of them with
 > `.venv\Scripts\python -u <file>.py`.
 >
 > **Open threads from the last session (D hasn't picked yet):**
@@ -21,8 +21,8 @@ _Last updated: 2026-09-01 - Current build: **v1.4 "backgrounds pull their weight
 >
 > Everything else (character CRUD, campaigns, derived stats, homebrew layer,
 > creation wizard, 41 species/subraces with stacking ASI, background
-> proficiencies) is built and tested. See the Build Log at the bottom for
-> the full history.
+> proficiencies, subrace picker popup) is built and tested. See the Build
+> Log at the bottom for the full history.
 
 A single-page, offline-first **D&D character builder and campaign tracker**.
 Sibling project to the Budget Planner: same architecture, same Firebase project,
@@ -251,6 +251,25 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
   - Coverage: 2 new assertions in `test_rules.py` (a Criminal's `deception`
     total auto-includes proficiency; `backgroundSkills` returns the right
     pair). Full suite now **142 green**.
+- **v1.5** - **Subrace picker gets its own popup.** The inline subrace grid
+  from v1.3 sat directly under a 41-species grid, which made the species
+  step of the wizard sprawl. Subraces now live in a standalone modal on top
+  of the wizard:
+  - Picking a species with subraces (e.g. Elf, Dwarf) **auto-opens** the
+    popup - matches the rulebook, where a subrace isn't optional if the
+    species has one. Picking a subrace auto-closes it.
+  - A persistent **subrace bar** on the species step shows the current
+    choice (or "No subrace chosen yet") with a **Change subrace** button to
+    reopen it any time.
+  - Popup closes via its **Done** button, clicking the backdrop, or
+    **Escape** (Escape closes the popup first if it's open, only closing
+    the whole wizard on a second press).
+  - New `.wz-sub-host` layer in the overlay markup keeps the popup's DOM
+    separate from the step body, so re-rendering the wizard step doesn't
+    have to know or care whether the popup is open.
+  - Coverage: 4 new assertions in `test_wizard_e2e.py` (auto-open, blocked
+    Next until chosen, auto-close on pick, reopen/Done roundtrip). Full
+    suite now **146 green**.
 
 ---
 
