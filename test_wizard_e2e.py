@@ -62,6 +62,7 @@ def main() -> int:
         # Step 5: abilities -> auto-assign standard array for the class
         next_btn = page.query_selector('[data-wz="next"]')
         check("Next disabled before assigning scores", next_btn.get_attribute("disabled") is not None)
+        page.click('[data-wz="method:standard"]')
         page.click('[data-wz="suggest"]')
         next_btn = page.query_selector('[data-wz="next"]')
         check("Next enabled after auto-assign", next_btn.get_attribute("disabled") is None)

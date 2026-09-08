@@ -45,6 +45,7 @@ def main() -> int:
 
         print("  -- standard array: duplicate-slot guard --")
         open_wizard_to_abilities(page)
+        page.click('[data-wz="method:standard"]')
         page.select_option('select[data-wz="assign:str"]', "0")
         dex_opt0 = page.query_selector('select[data-wz="assign:dex"] option[value="0"]')
         check("slot claimed by STR shows disabled in DEX's dropdown",
@@ -95,6 +96,37 @@ def main() -> int:
         page.click('[data-wz="cancel"]')
         check("wizard closes cleanly after a roll (no leaked timer errors)",
               page.query_selector(".wz-overlay") is None)
+
+        print("\n  -- regression: opening a <select> must not wipe it (locked dropdown bug) --")
+        # A real mouse click opens a native <select>'s dropdown BEFORE any
+        # option is chosen - the browser fires a plain "click" on the select
+        # itself at that moment, with no "change" yet. The wizard's overlay
+        # click-delegate used to treat that click as "assign this ability",
+        # which re-rendered the whole modal (innerHTML swap) and destroyed
+        # the still-open dropdown out from under the browser - every
+        # ability-score select looked permanently locked. This reproduces
+        # exactly that click, with no accompanying "change" event.
+        open_wizard_to_abilities(page)
+        page.click('[data-wz="method:standard"]')
+        sel = page.query_selector('select[data-wz="assign:str"]')
+        page.evaluate("(el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))", sel)
+        same_node = page.evaluate(
+            "(el) => document.querySelector('select[data-wz=\"assign:str\"]') === el", sel)
+        check("select survives a bare open-click - no premature re-render", same_node)
+        check("clicking (not choosing) a select must not assign anything",
+              page.evaluate("() => YARN.Wizard._debug.state().assign.str") is None)
+        # The real interaction still works: a genuine change event assigns.
+        page.select_option('select[data-wz="assign:str"]', "2")
+        check("a real change event still assigns correctly",
+              page.evaluate("() => YARN.Wizard._debug.state().assign.str") == 2)
+
+        print("\n  -- default method is Roll dice (the classic way to start) --")
+        page.click('[data-wz="cancel"]')
+        open_wizard_to_abilities(page)
+        check("ability step defaults to the 'roll' method",
+              page.evaluate("() => YARN.Wizard._debug.state().method") == "roll")
+        check("Roll dice tab shows as selected by default",
+              "sel" in page.query_selector('[data-wz="method:roll"]').get_attribute("class"))
 
         browser.close()
 

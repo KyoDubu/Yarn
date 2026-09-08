@@ -53,7 +53,7 @@
       species: "human",
       subspecies: "",
       background: "Folk Hero",
-      method: "standard",
+      method: "roll",
       pool: YARN.STANDARD_ARRAY.slice(),
       poolMeta: [],       // parallel dice breakdowns for the roll method
       rolling: false,     // true while the roll animation is mid-flight
@@ -422,6 +422,14 @@
   function onOverlayClick(e) {
     var el = e.target.closest("[data-wz]");
     if (!el) { return; }
+    // Form controls (select/input/textarea) carry their own data-wz for the
+    // "input"/"change" listener below - they must NOT also react to "click".
+    // A native <select> fires a click the instant you open its dropdown,
+    // before you've picked anything; dispatching on that click would
+    // re-render the whole modal (innerHTML swap) and yank the still-open
+    // dropdown out from under the browser, making every ability-score
+    // dropdown look "locked" - you could never actually land a new pick.
+    if (el.tagName === "SELECT" || el.tagName === "INPUT" || el.tagName === "TEXTAREA") { return; }
     // A click anywhere inside the subrace popup body (data-wz-stop) bubbles
     // up looking for its nearest [data-wz] owner, which is the scrim itself
     // when the click lands on plain text/whitespace. Only an actual click
