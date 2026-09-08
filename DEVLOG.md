@@ -8,9 +8,24 @@ _Last updated: 2026-09-04 - Current build: **v1.8 "live on GitHub Pages, dragon 
 >
 > **LIVE URL:** https://kyodubu.github.io/Yarn/ - real GitHub Pages
 > hosting, verified working end-to-end (real 200, app renders, zero
-> console errors). Cloud sync's Firestore rules ARE pasted into the
-> Firebase console and the GitHub Pages domain IS authorized - sign-in
-> should work for real users now, not just localhost.
+> console errors). Cloud sync's Firestore rules and the GitHub Pages
+> domain ARE both confirmed live as of 2026-09-08 - sign-in and party
+> sync verified working for a real (non-localhost) user.
+>
+> **2026-09-08 correction:** an earlier handoff note here claimed the
+> `yarnParties` Firestore rules block had already been pasted into the
+> `kyodububb` console - that was WRONG. The console only ever had
+> Budget's `households` block; `yarnParties` was missing entirely,
+> which silently denied every Yarn cloud-sync read/write with
+> "Permission Denied" (first hit: the `findParty()` lookup query).
+> Fixed by hand-merging both `match` blocks into one rules doc and
+> publishing it in the console (see `firestore.rules` in this repo for
+> the source of truth going forward - always paste that alongside
+> Budget's block, never assume it's already there without checking the
+> live Rules tab). Also confirmed for the record: signing in with
+> Google does NOT require adding each player's email anywhere in the
+> Firebase console - any Google account can authenticate; the
+> `members` array per-party-doc is what actually gates data access.
 >
 > **Full test suite: 170 assertions across 7 files, all green** -
 > `test_rules.py` (38), `test_homebrew.py` (21), `test_wizard.py` (33),
