@@ -245,6 +245,11 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 
 .wz-review h3 { color: var(--accent); font-size: 1.1rem; }
 .wz-summary { color: var(--muted); font-size: .85rem; margin: .1rem 0 .8rem; }
+.wz-blurb {
+  color: var(--muted); font-size: .85rem; font-style: italic;
+  margin: .8rem 0 0; padding: .6rem .8rem; border-left: 3px solid var(--accent);
+  background: rgba(255,255,255,.03); border-radius: 0 6px 6px 0;
+}
 .wz-review-tbl { max-width: 260px; }
 .wz-tag, .wz-review .wz-tag {
   display: inline-block; font-size: .6rem; color: var(--accent);

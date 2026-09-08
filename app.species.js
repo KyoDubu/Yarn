@@ -27,6 +27,7 @@
     // ---- Dwarf ---------------------------------------------------------
     {
       key: "dwarf", name: "Dwarf", size: "Medium", speed: 25,
+      blurb: "Stout, sturdy, and hard to kill - dwarves bring resilience and a grudge against poison to any party.",
       asi: { con: 2 }, languages: ["Common", "Dwarvish"],
       traits: ["Darkvision 60 ft", "Dwarven Resilience (advantage vs. poison, resistance to poison damage)",
         "Stonecunning (double proficiency on History checks about stonework)", "Dwarven combat training (axe, hammer)"],
@@ -43,6 +44,7 @@
     // ---- Elf -------------------------------------------------------------
     {
       key: "elf", name: "Elf", size: "Medium", speed: 30,
+      blurb: "Graceful and long-lived, elves favor keen senses and magic over brute force.",
       asi: { dex: 2 }, languages: ["Common", "Elvish"],
       traits: ["Darkvision 60 ft", "Fey Ancestry (advantage vs. charm, immune to magical sleep)",
         "Trance (4-hour meditation instead of sleep)", "Keen Senses (proficiency in Perception)"],
@@ -67,6 +69,7 @@
     // ---- Halfling ----------------------------------------------------------
     {
       key: "halfling", name: "Halfling", size: "Small", speed: 25,
+      blurb: "Small, lucky, and quick underfoot - halflings dodge disaster better than almost anyone.",
       asi: { dex: 2 }, languages: ["Common", "Halfling"],
       traits: ["Lucky (reroll natural 1s on attack/ability/save)", "Brave (advantage vs. frightened)",
         "Halfling Nimbleness (move through larger creatures' spaces)"],
@@ -82,6 +85,7 @@
     // ---- Human -------------------------------------------------------------
     {
       key: "human", name: "Human", size: "Medium", speed: 30,
+      blurb: "Adaptable and ambitious, humans spread their talent evenly across every ability.",
       asi: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 },
       languages: ["Common", "one language of choice"],
       traits: ["Versatile and numerous - no unusual traits beyond the ability spread"],
@@ -94,6 +98,7 @@
     // ---- Dragonborn --------------------------------------------------------
     {
       key: "dragonborn", name: "Dragonborn", size: "Medium", speed: 30,
+      blurb: "Draconic humanoids with a devastating elemental breath weapon baked into their ancestry.",
       asi: { str: 2, cha: 1 }, languages: ["Common", "Draconic"],
       traits: ["Breath Weapon (replaces an attack, Dex or Con save depending on ancestry)",
         "Damage Resistance matching draconic ancestry"],
@@ -113,6 +118,7 @@
     // ---- Gnome -------------------------------------------------------------
     {
       key: "gnome", name: "Gnome", size: "Small", speed: 25,
+      blurb: "Small, clever, and magically resistant - gnomes are inventive tinkerers with a mind for mischief.",
       asi: { int: 2 }, languages: ["Common", "Gnomish"],
       traits: ["Darkvision 60 ft", "Gnome Cunning (advantage on Int/Wis/Cha saves vs. magic)"],
       subraces: [
@@ -127,6 +133,7 @@
     // ---- Half-Elf ----------------------------------------------------------
     {
       key: "halfElf", name: "Half-Elf", size: "Medium", speed: 30,
+      blurb: "Caught between two worlds, half-elves combine human drive with elven grace and charm.",
       asi: { cha: 2 }, languages: ["Common", "Elvish", "one language of choice"],
       traits: ["Darkvision 60 ft", "Fey Ancestry (advantage vs. charm, immune to magical sleep)",
         "Skill Versatility (proficiency in two skills of choice)",
@@ -140,6 +147,7 @@
     // ---- Half-Orc ----------------------------------------------------------
     {
       key: "halfOrc", name: "Half-Orc", size: "Medium", speed: 30,
+      blurb: "Fierce and hard to put down, half-orcs turn their orcish strength into relentless combat presence.",
       asi: { str: 2, con: 1 }, languages: ["Common", "Orc"],
       traits: ["Darkvision 60 ft", "Menacing (proficiency in Intimidation)",
         "Relentless Endurance (drop to 1 HP instead of 0, once per long rest)",
@@ -148,6 +156,7 @@
     // ---- Tiefling ----------------------------------------------------------
     {
       key: "tiefling", name: "Tiefling", size: "Medium", speed: 30,
+      blurb: "Marked by an infernal bloodline, tieflings wield innate fire resistance and a touch of hellish magic.",
       asi: { int: 1, cha: 2 }, languages: ["Common", "Infernal"],
       traits: ["Darkvision 60 ft", "Hellish Resistance (resistance to fire damage)",
         "Infernal Legacy: thaumaturgy cantrip, then hellish rebuke / darkness at higher levels"],
@@ -166,6 +175,7 @@
     // ---- Aasimar (Volo's) ---------------------------------------------------
     {
       key: "aasimar", name: "Aasimar", size: "Medium", speed: 30,
+      blurb: "Touched by the celestial planes, aasimar carry a spark of holy light and healing grace.",
       asi: { cha: 2 }, languages: ["Common", "Celestial"],
       traits: ["Darkvision 60 ft", "Celestial Resistance (resistance to necrotic and radiant damage)",
         "Healing Hands (touch to heal, once per long rest)", "Light Bearer: knows the light cantrip"],
@@ -181,42 +191,49 @@
     // ---- other standalone species -------------------------------------------
     {
       key: "goliath", name: "Goliath", size: "Medium", speed: 30,
+      blurb: "Towering mountain-folk built for endurance, tough enough to shrug off the harshest terrain.",
       asi: { str: 2, con: 1 }, languages: ["Common", "Giant"],
       traits: ["Stone's Endurance (reduce damage once per short/long rest)", "Powerful Build (counts as Large for carrying)",
         "Mountain Born (acclimated to cold and high altitude)"]
     },
     {
       key: "tabaxi", name: "Tabaxi", size: "Medium", speed: 30,
+      blurb: "Curious, cat-like wanderers with startling bursts of speed and a knack for climbing.",
       asi: { dex: 2, cha: 1 }, languages: ["Common", "one language of choice"],
       traits: ["Darkvision 60 ft", "Feline Agility (double speed for one move per turn)",
         "Cat's Claws (climb speed, unarmed claw damage)", "Cat's Talent (proficiency in Perception and Stealth)"]
     },
     {
       key: "firbolg", name: "Firbolg", size: "Medium", speed: 30,
+      blurb: "Gentle giant-kin of the forest, firbolgs blend quiet strength with nature magic and stealth.",
       asi: { wis: 2, str: 1 }, languages: ["Common", "Elvish", "Giant"],
       traits: ["Firbolg Magic: detect magic / disguise self (as a giant version of yourself), once per rest",
         "Hidden Step: turn invisible as a bonus action", "Powerful Build", "Speech of Beast and Leaf"]
     },
     {
       key: "kenku", name: "Kenku", size: "Medium", speed: 30,
+      blurb: "Flightless bird-folk cursed to speak only by mimicry - master forgers and impressionists.",
       asi: { dex: 2, wis: 1 }, languages: ["Common", "Auran"],
       traits: ["Expert Forgery", "Mimicry (copy sounds/voices heard)", "Kenku Training (choose two skills from a set list)",
         "Cannot speak except by mimicking"]
     },
     {
       key: "lizardfolk", name: "Lizardfolk", size: "Medium", speed: 30,
+      blurb: "Cold-blooded, pragmatic survivors with a natural bite and armored hide.",
       asi: { con: 2, wis: 1 }, languages: ["Common", "Draconic"],
       traits: ["Bite (unarmed natural weapon)", "Natural Armor (13 + Dex)", "Hold Breath 15 minutes",
         "Hungry Jaws (bonus-action bite in a pinch)"]
     },
     {
       key: "tortle", name: "Tortle", size: "Medium", speed: 30,
+      blurb: "Shelled, unhurried wanderers whose natural armor makes them nearly impossible to crack.",
       asi: { str: 2, wis: 1 }, languages: ["Common", "Aquan"],
       traits: ["Natural Armor 17 (no Dex, can still use a shield)", "Shell Defense (withdraw for extra AC, can't move/attack)",
         "Hold Breath 1 hour", "Claws (unarmed natural weapon)"]
     },
     {
       key: "genasi", name: "Genasi", size: "Medium", speed: 30,
+      blurb: "Elementally touched humanoids whose subrace decides whether they command air, earth, fire, or water.",
       asi: { con: 2 }, languages: ["Common", "Primordial"],
       traits: ["Elemental heritage flavors your subrace's extra trait"],
       subraces: [
@@ -233,65 +250,76 @@
     },
     {
       key: "orc", name: "Orc", size: "Medium", speed: 30,
+      blurb: "Aggressive, powerfully built warriors who close distance fast and hit even faster.",
       asi: { str: 2, con: 1 }, languages: ["Common", "Orc"],
       traits: ["Darkvision 60 ft", "Aggressive (bonus-action move toward an enemy)", "Powerful Build",
         "Primal Intuition (proficiency in two Survival-flavored skills)"]
     },
     {
       key: "goblin", name: "Goblin", size: "Small", speed: 30,
+      blurb: "Small, nimble, and sneaky - goblins punch above their size and vanish before payback lands.",
       asi: { dex: 2, con: 1 }, languages: ["Common", "Goblin"],
       traits: ["Darkvision 60 ft", "Fury of the Small (extra damage vs. larger creatures, once per rest)",
         "Nimble Escape (bonus-action Disengage or Hide)"]
     },
     {
       key: "hobgoblin", name: "Hobgoblin", size: "Medium", speed: 30,
+      blurb: "Disciplined military tacticians bred for organized warfare and mutual battlefield support.",
       asi: { con: 2, int: 1 }, languages: ["Common", "Goblin"],
       traits: ["Darkvision 60 ft", "Martial Training (light armor, one martial weapon, one artisan's tool)",
         "Saving Face (bonus to a failed roll if an ally is nearby, once per rest)"]
     },
     {
       key: "bugbear", name: "Bugbear", size: "Medium", speed: 30,
+      blurb: "Long-limbed ambush predators who strike from an unnervingly safe distance.",
       asi: { str: 2, dex: 1 }, languages: ["Common", "Goblin"],
       traits: ["Darkvision 60 ft", "Long-Limbed (+5 ft reach on melee attacks on your turn)", "Powerful Build",
         "Sneaky (proficiency in Stealth)", "Surprise Attack (extra damage vs. a surprised target)"]
     },
     {
       key: "kobold", name: "Kobold", size: "Small", speed: 30,
+      blurb: "Small, pack-minded tricksters who fight smart, in numbers, and never fair.",
       asi: { dex: 2 }, languages: ["Common", "Draconic"],
       traits: ["Darkvision 60 ft", "Pack Tactics (advantage when an ally is adjacent to the target)",
         "Sunlight Sensitivity", "Grovel, Cower, and Beg (bonus action to distract, once per short/long rest)"]
     },
     {
       key: "yuanTi", name: "Yuan-ti Pureblood", size: "Medium", speed: 30,
+      blurb: "Serpentine humanoids with innate magic, poison immunity, and unsettling magic resistance.",
       asi: { cha: 2, int: 1 }, languages: ["Common", "Abyssal", "Draconic"],
       traits: ["Darkvision 60 ft", "Innate spellcasting: animal friendship (snakes), then suggestion at higher levels",
         "Magic Resistance (advantage vs. spells and magical effects)", "Poison Immunity"]
     },
     {
       key: "aarakocra", name: "Aarakocra", size: "Medium", speed: 25,
+      blurb: "Bird-folk with true flight, more at home in the open sky than on the ground.",
       asi: { dex: 2, wis: 1 }, languages: ["Common", "Aarakocra", "Auran"],
       traits: ["Flight speed 50 ft (light/no armor)", "Talons (unarmed natural weapon)"]
     },
     {
       key: "triton", name: "Triton", size: "Medium", speed: 30,
+      blurb: "Guardians of the deep sea, tritons breathe water, control the tides, and brave crushing pressure.",
       asi: { str: 1, con: 1, cha: 1 }, languages: ["Common", "Primordial"],
       traits: ["Amphibious, swim speed 30 ft", "Control Air and Water 1/day", "Emissary of the Sea (speak with aquatic beasts)",
         "Guardians of the Depths (cold resistance, no deep-water pressure/cold issues)"]
     },
     {
       key: "changeling", name: "Changeling", size: "Medium", speed: 30, asi: {},
+      blurb: "Natural shapeshifters who can wear any face - masters of disguise and social manipulation.",
       languages: ["Common", "two languages of choice"],
       traits: ["Ability Score Increase: your choice, +2/+1 or +1/+1/+1 (apply via campaign ASI)",
         "Shapechanger (alter your appearance as an action)", "Changeling Instincts (proficiency in two social skills)"]
     },
     {
       key: "kalashtar", name: "Kalashtar", size: "Medium", speed: 30,
+      blurb: "Bonded to a benevolent spirit, kalashtar carry unshakable mental resilience and quiet telepathy.",
       asi: { wis: 2, cha: 1 }, languages: ["Common", "Quori"],
       traits: ["Dual Mind (advantage on Wisdom saves)", "Mental Discipline (resistance to psychic damage)",
         "Mind Link (telepathy with a bonded creature)", "Severed from Dreams (immune to magical sleep, no dreaming)"]
     },
     {
       key: "shifter", name: "Shifter", size: "Medium", speed: 30,
+      blurb: "Distant lycanthrope descendants who briefly channel a beastly surge in a pinch.",
       asi: {}, languages: ["Common"],
       traits: ["Darkvision 60 ft", "Shifting: bonus action to gain temp HP + a subrace bonus for up to 1 minute, once per rest"],
       subraces: [
@@ -303,6 +331,7 @@
     },
     {
       key: "warforged", name: "Warforged", size: "Medium", speed: 30,
+      blurb: "Living constructs built for war, needing no food, sleep, or breath to keep fighting.",
       asi: { con: 1 }, languages: ["Common", "one language of choice"],
       traits: ["Ability Score Increase: +2 to one other ability of choice (apply via campaign ASI)",
         "Constructed Resilience (advantage vs. poison, resistance to poison, doesn't need to eat/breathe/sleep)",
@@ -310,12 +339,14 @@
     },
     {
       key: "centaur", name: "Centaur", size: "Medium", speed: 40,
+      blurb: "Half-humanoid, half-horse, centaurs charge down foes with unmatched overland speed.",
       asi: { str: 2, wis: 1 }, languages: ["Common", "Sylvan"],
       traits: ["Fey", "Charge (extra damage after moving 30+ ft straight toward target)", "Hooves (unarmed natural weapon)",
         "Equine Build (counts as Large for carrying, advantage resisting shove)", "Proficiency in Survival"]
     },
     {
       key: "minotaur", name: "Minotaur", size: "Medium", speed: 30,
+      blurb: "Horned, labyrinth-born brutes who never get lost and gore anything in their path.",
       asi: { str: 2, con: 1 }, languages: ["Common", "Minotaur"],
       traits: ["Horns (unarmed natural weapon)", "Goring Rush (bonus-action charge attack after moving 10+ ft)",
         "Hammering Horns (bonus-action shove after a horn hit)", "Imposing Presence (advantage on an intimidation-style check, once per rest)",
@@ -323,18 +354,21 @@
     },
     {
       key: "loxodon", name: "Loxodon", size: "Medium", speed: 30,
+      blurb: "Elephant-like giants of quiet patience, natural armor, and an unshakable memory.",
       asi: { con: 2, wis: 1 }, languages: ["Common", "Loxodon"],
       traits: ["Powerful Build", "Trunk (manipulate small objects, no hands needed)", "Natural Armor",
         "Keen Smell (advantage on Perception/Investigation via smell)", "Loxodon Serenity (advantage vs. charm/frightened)"]
     },
     {
       key: "simicHybrid", name: "Simic Hybrid", size: "Medium", speed: 30,
+      blurb: "Bio-engineered hybrids customized with one wild animal enhancement of your choosing.",
       asi: { con: 2 }, languages: ["Common", "Elvish"],
       traits: ["Ability Score Increase: +1 to one other ability of choice (apply via campaign ASI)",
         "Animal Enhancement: pick one - gills/swim, grasping tendrils, carapace +1 AC, or manta glide"]
     },
     {
       key: "vedalken", name: "Vedalken", size: "Medium", speed: 30,
+      blurb: "Methodical, blue-skinned scholars who apply calm precision to everything they do.",
       asi: { int: 2, wis: 1 }, languages: ["Common", "Vedalken"],
       traits: ["Vedalken Dispassion (advantage on Wisdom saves vs. being charmed/frightened)",
         "Tireless Precision (add proficiency to any Int/Wis/Cha check that doesn't already use it)",
@@ -342,12 +376,14 @@
     },
     {
       key: "satyr", name: "Satyr", size: "Medium", speed: 35,
+      blurb: "Revelrous fey creatures who love music, mischief, and dodging magic they don't like.",
       asi: { cha: 2, dex: 1 }, languages: ["Common", "Elvish", "Sylvan"],
       traits: ["Fey", "Ram (unarmed natural weapon)", "Magic Resistance (advantage vs. spells and magical effects)",
         "Mirthful Leaps (bonus to jump distance)", "Reveler (proficiency in Performance/Persuasion + one instrument or game set)"]
     },
     {
       key: "githyanki", name: "Githyanki", size: "Medium", speed: 30,
+      blurb: "Psionic warrior-raiders of the Astral Plane, trained from birth in blade and mind alike.",
       asi: { str: 2, int: 1 }, languages: ["Common", "Gith"],
       traits: ["Decadent Mastery (learn one language/tool/skill temporarily, once per long rest)",
         "Martial Prodigy (proficiency with light/medium armor, shortsword, longsword, greatsword)",
@@ -355,18 +391,21 @@
     },
     {
       key: "githzerai", name: "Githzerai", size: "Medium", speed: 30,
+      blurb: "Disciplined psionic monks of order, masters of mental defense and inner calm.",
       asi: { wis: 2, int: 1 }, languages: ["Common", "Gith"],
       traits: ["Mental Discipline (advantage on saves vs. being charmed/frightened)",
         "Githzerai Psionics: mage hand, then shield / detect thoughts at higher levels"]
     },
     {
       key: "grung", name: "Grung", size: "Small", speed: 25,
+      blurb: "Tiny, poisonous frog-folk who thrive in the wild and must always stay moist to survive.",
       asi: { dex: 2, con: 1 }, languages: ["Grung"],
       traits: ["Amphibious", "Poison Immunity", "Poisonous Skin (touching you risks poison)",
         "Standing Leap (long jump up to 25 ft)", "Water Dependency (must stay moist or start suffocating)"]
     },
     {
       key: "harengon", name: "Harengon", size: "Medium", speed: 30, asi: {},
+      blurb: "Rabbit-folk with lightning reflexes, a lucky streak, and a knack for leaping out of trouble.",
       languages: ["Common", "one language of choice"],
       traits: ["Ability Score Increase: your choice, +2/+1 or +1/+1/+1 (apply via campaign ASI)",
         "Hare-Trigger (add to initiative rolls)", "Leporine Senses (proficiency in Perception)",
@@ -374,12 +413,14 @@
     },
     {
       key: "owlin", name: "Owlin", size: "Medium", speed: 30, asi: {},
+      blurb: "Silent-winged owl-folk with keen night vision and a talent for going unheard.",
       languages: ["Common", "one language of choice"],
       traits: ["Ability Score Increase: your choice, +2/+1 or +1/+1/+1 (apply via campaign ASI)",
         "Darkvision 120 ft", "Flight speed 30 ft (light/no armor)", "Silent Feathers (proficiency in Stealth)"]
     },
     {
       key: "fairy", name: "Fairy", size: "Small", speed: 30, asi: {},
+      blurb: "Tiny fey with true flight and a spark of whimsical, ever-growing magic.",
       languages: ["Common", "Sylvan"],
       traits: ["Ability Score Increase: your choice, +2/+1 or +1/+1/+1 (apply via campaign ASI)",
         "Flight speed 30 ft", "Fairy Magic: druidcraft, then faerie fire / enlarge-reduce at higher levels"]

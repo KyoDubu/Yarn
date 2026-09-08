@@ -45,18 +45,18 @@
   // hitDie drives HP + hit dice. saves = the two proficient saving throws.
   // caster: "full" | "half" | "third" | "pact" | null -> drives spell slots.
   YARN.CLASSES = [
-    { key: "barbarian", name: "Barbarian", hitDie: 12, saves: ["str", "con"], caster: null,    spellAbility: null },
-    { key: "bard",      name: "Bard",      hitDie: 8,  saves: ["dex", "cha"], caster: "full",  spellAbility: "cha" },
-    { key: "cleric",    name: "Cleric",    hitDie: 8,  saves: ["wis", "cha"], caster: "full",  spellAbility: "wis" },
-    { key: "druid",     name: "Druid",     hitDie: 8,  saves: ["int", "wis"], caster: "full",  spellAbility: "wis" },
-    { key: "fighter",   name: "Fighter",   hitDie: 10, saves: ["str", "con"], caster: null,    spellAbility: null },
-    { key: "monk",      name: "Monk",      hitDie: 8,  saves: ["str", "dex"], caster: null,    spellAbility: null },
-    { key: "paladin",   name: "Paladin",   hitDie: 10, saves: ["wis", "cha"], caster: "half",  spellAbility: "cha" },
-    { key: "ranger",    name: "Ranger",    hitDie: 10, saves: ["str", "dex"], caster: "half",  spellAbility: "wis" },
-    { key: "rogue",     name: "Rogue",     hitDie: 8,  saves: ["dex", "int"], caster: null,    spellAbility: null },
-    { key: "sorcerer",  name: "Sorcerer",  hitDie: 6,  saves: ["con", "cha"], caster: "full",  spellAbility: "cha" },
-    { key: "warlock",   name: "Warlock",   hitDie: 8,  saves: ["wis", "cha"], caster: "pact",  spellAbility: "cha" },
-    { key: "wizard",    name: "Wizard",    hitDie: 6,  saves: ["int", "wis"], caster: "full",  spellAbility: "int" }
+    { key: "barbarian", name: "Barbarian", hitDie: 12, saves: ["str", "con"], caster: null,    spellAbility: null, blurb: "A relentless melee brawler who trades finesse for raw fury and can shrug off punishment mid-rage." },
+    { key: "bard",      name: "Bard",      hitDie: 8,  saves: ["dex", "cha"], caster: "full",  spellAbility: "cha", blurb: "A charismatic jack-of-all-trades who weaves magic through music, wit, and social savvy." },
+    { key: "cleric",    name: "Cleric",    hitDie: 8,  saves: ["wis", "cha"], caster: "full",  spellAbility: "wis", blurb: "A divine conduit who heals allies and channels their deity's power in melee or at range." },
+    { key: "druid",     name: "Druid",     hitDie: 8,  saves: ["int", "wis"], caster: "full",  spellAbility: "wis", blurb: "A nature-bound spellcaster who shapeshifts into beasts and commands the wild itself." },
+    { key: "fighter",   name: "Fighter",   hitDie: 10, saves: ["str", "con"], caster: null,    spellAbility: null, blurb: "A versatile master of weapons and tactics, reliable in nearly any combat situation." },
+    { key: "monk",      name: "Monk",      hitDie: 8,  saves: ["str", "dex"], caster: null,    spellAbility: null, blurb: "A disciplined martial artist who fights unarmed with supernatural speed and inner focus." },
+    { key: "paladin",   name: "Paladin",   hitDie: 10, saves: ["wis", "cha"], caster: "half",  spellAbility: "cha", blurb: "A holy warrior bound by a sacred oath, blending heavy armor with divine smites and auras." },
+    { key: "ranger",    name: "Ranger",    hitDie: 10, saves: ["str", "dex"], caster: "half",  spellAbility: "wis", blurb: "A wilderness hunter who tracks foes, fights from range or melee, and knows the land." },
+    { key: "rogue",     name: "Rogue",     hitDie: 8,  saves: ["dex", "int"], caster: null,    spellAbility: null, blurb: "A cunning skirmisher who strikes from the shadows, disarms traps, and talks their way out of trouble." },
+    { key: "sorcerer",  name: "Sorcerer",  hitDie: 6,  saves: ["con", "cha"], caster: "full",  spellAbility: "cha", blurb: "An innate spellcaster whose magic comes from raw bloodline power rather than study." },
+    { key: "warlock",   name: "Warlock",   hitDie: 8,  saves: ["wis", "cha"], caster: "pact",  spellAbility: "cha", blurb: "A spellcaster who traded a pact with a mysterious patron for eldritch power." },
+    { key: "wizard",    name: "Wizard",    hitDie: 6,  saves: ["int", "wis"], caster: "full",  spellAbility: "int", blurb: "A scholarly spellcaster who masters magic through study, unlocking the widest spell list in the game." }
   ];
 
   // ---- Species (SRD) -------------------------------------------------
@@ -80,19 +80,19 @@
   // traits: they never feed the math because Yarn has no tool-proficiency
   // or language state to compute against yet.
   YARN.BACKGROUND_INFO = {
-    "Acolyte":       { skills: ["insight", "religion"], tools: [], languages: 2, feature: "Shelter of the Faithful" },
-    "Charlatan":     { skills: ["deception", "sleightOfHand"], tools: ["Disguise kit", "Forgery kit"], languages: 0, feature: "False Identity" },
-    "Criminal":      { skills: ["deception", "stealth"], tools: ["One gaming set", "Thieves' tools"], languages: 0, feature: "Criminal Contact" },
-    "Entertainer":   { skills: ["acrobatics", "performance"], tools: ["Disguise kit", "One musical instrument"], languages: 0, feature: "By Popular Demand" },
-    "Folk Hero":     { skills: ["animalHandling", "survival"], tools: ["One artisan's tools", "Vehicles (land)"], languages: 0, feature: "Rustic Hospitality" },
-    "Guild Artisan": { skills: ["insight", "persuasion"], tools: ["One artisan's tools"], languages: 1, feature: "Guild Membership" },
-    "Hermit":        { skills: ["medicine", "religion"], tools: ["Herbalism kit"], languages: 1, feature: "Discovery" },
-    "Noble":         { skills: ["history", "persuasion"], tools: ["One gaming set"], languages: 1, feature: "Position of Privilege" },
-    "Outlander":     { skills: ["athletics", "survival"], tools: ["One musical instrument"], languages: 1, feature: "Wanderer" },
-    "Sage":          { skills: ["arcana", "history"], tools: [], languages: 2, feature: "Researcher" },
-    "Sailor":        { skills: ["athletics", "perception"], tools: ["Navigator's tools", "Vehicles (water)"], languages: 0, feature: "Ship's Passage" },
-    "Soldier":       { skills: ["athletics", "intimidation"], tools: ["One gaming set", "Vehicles (land)"], languages: 0, feature: "Military Rank" },
-    "Urchin":        { skills: ["sleightOfHand", "stealth"], tools: ["Disguise kit", "Thieves' tools"], languages: 0, feature: "City Secrets" }
+    "Acolyte":       { skills: ["insight", "religion"], tools: [], languages: 2, feature: "Shelter of the Faithful", blurb: "You served in a temple, devoted to a deity, with a faith community behind you." },
+    "Charlatan":     { skills: ["deception", "sleightOfHand"], tools: ["Disguise kit", "Forgery kit"], languages: 0, feature: "False Identity", blurb: "A con artist adept at disguises, forged papers, and separating marks from their coin." },
+    "Criminal":      { skills: ["deception", "stealth"], tools: ["One gaming set", "Thieves' tools"], languages: 0, feature: "Criminal Contact", blurb: "You have a network of shady contacts and a history of breaking the law to get by." },
+    "Entertainer":   { skills: ["acrobatics", "performance"], tools: ["Disguise kit", "One musical instrument"], languages: 0, feature: "By Popular Demand", blurb: "A performer who's traveled from town to town, always ready to work a crowd." },
+    "Folk Hero":     { skills: ["animalHandling", "survival"], tools: ["One artisan's tools", "Vehicles (land)"], languages: 0, feature: "Rustic Hospitality", blurb: "A commoner who stood up against injustice and became a local legend for it." },
+    "Guild Artisan": { skills: ["insight", "persuasion"], tools: ["One artisan's tools"], languages: 1, feature: "Guild Membership", blurb: "A skilled tradesperson backed by a powerful guild and its connections." },
+    "Hermit":        { skills: ["medicine", "religion"], tools: ["Herbalism kit"], languages: 1, feature: "Discovery", blurb: "You lived in seclusion, seeking enlightenment or hiding from the world - and found something." },
+    "Noble":         { skills: ["history", "persuasion"], tools: ["One gaming set"], languages: 1, feature: "Position of Privilege", blurb: "Born to wealth and privilege, you're used to influence, etiquette, and being obeyed." },
+    "Outlander":     { skills: ["athletics", "survival"], tools: ["One musical instrument"], languages: 1, feature: "Wanderer", blurb: "Raised in the wilds far from civilization, you're a survivor first and a socialite never." },
+    "Sage":          { skills: ["arcana", "history"], tools: [], languages: 2, feature: "Researcher", blurb: "A scholar who devoted years to research, libraries, and chasing knowledge for its own sake." },
+    "Sailor":        { skills: ["athletics", "perception"], tools: ["Navigator's tools", "Vehicles (water)"], languages: 0, feature: "Ship's Passage", blurb: "You've spent your life at sea, weathering storms and rough crews to see distant shores." },
+    "Soldier":       { skills: ["athletics", "intimidation"], tools: ["One gaming set", "Vehicles (land)"], languages: 0, feature: "Military Rank", blurb: "A trained veteran of a military campaign, disciplined and used to a chain of command." },
+    "Urchin":        { skills: ["sleightOfHand", "stealth"], tools: ["Disguise kit", "Thieves' tools"], languages: 0, feature: "City Secrets", blurb: "A streetwise survivor who grew up with nothing and learned to take what you needed." }
   };
 
   YARN.ALIGNMENTS = [

@@ -120,8 +120,10 @@
       var caster = c.caster ? (c.caster + " caster") : "martial";
       return { key: c.key, name: c.name, hint: "d" + c.hitDie + " \u00b7 " + caster };
     });
+    var picked = YARN.classInfo(S.klass);
     return '<p class="wz-lead">Your class is the biggest single choice - it sets your hit die, saves and spellcasting.</p>' +
-      '<div class="wz-cards wz-cards-grid">' + radioCards(cls, S.klass, "klass", "key", "name", "hint") + "</div>";
+      '<div class="wz-cards wz-cards-grid">' + radioCards(cls, S.klass, "klass", "key", "name", "hint") + "</div>" +
+      (picked && picked.blurb ? '<p class="wz-blurb">' + esc(picked.name) + ": " + esc(picked.blurb) + "</p>" : "");
   }
 
   function asiText(asi) {
@@ -147,6 +149,7 @@
     }
     return '<p class="wz-lead">Species sets your size, speed and (in the 2014 rules Yarn uses) your ability bonuses.</p>' +
       '<div class="wz-cards wz-cards-grid">' + radioCards(sp, S.species, "species", "key", "name", "hint") + "</div>" +
+      (species && species.blurb ? '<p class="wz-blurb">' + esc(species.name) + ": " + esc(species.blurb) + "</p>" : "") +
       subLine;
   }
 
@@ -181,9 +184,11 @@
       }).join(", ") : "";
       return { key: b, name: b, hint: hint };
     });
+    var picked = YARN.backgroundInfo(S.background);
     return '<p class="wz-lead">Your background is your life before adventuring - it grants two fixed skill proficiencies. ' +
       '<button class="wz-link" data-wz="random-bg">surprise me</button></p>' +
-      '<div class="wz-cards wz-cards-grid">' + radioCards(bg, S.background, "background", "key", "name", "hint") + "</div>";
+      '<div class="wz-cards wz-cards-grid">' + radioCards(bg, S.background, "background", "key", "name", "hint") + "</div>" +
+      (picked && picked.blurb ? '<p class="wz-blurb">' + esc(S.background) + ": " + esc(picked.blurb) + "</p>" : "");
   }
 
   function methodTabs() {
