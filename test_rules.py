@@ -16,7 +16,8 @@ HERE = pathlib.Path(__file__).parent
 MODULES = ["app.rules.js", "app.species.js", "app.core.js"]
 
 # A level 5 elf rogue. Hand-computed expectations:
-#   DEX 16 base + 2 elf = 18 -> +4 mod
+#   DEX 16 base + 2 background ASI (2024 rules: species grants none; Criminal's
+#     candidates are cha/dex/con, so +2 DEX is a legal pick) = 18 -> +4 mod
 #   CON 14 -> +2 mod, INT 12 -> +1, STR 8 -> -1
 #   Prof bonus at level 5 = 3
 #   Rogue saves = dex, int
@@ -31,6 +32,7 @@ ROGUE = {
     "klass": "rogue",
     "background": "Criminal",
     "abilities": {"str": 8, "dex": 16, "con": 14, "int": 12, "wis": 10, "cha": 13},
+    "backgroundAsi": {"str": 0, "dex": 2, "con": 0, "int": 0, "wis": 0, "cha": 0},
     "saveProfs": [],
     "skillProfs": ["perception", "acrobatics"],
     "skillExpertise": ["stealth"],
@@ -46,7 +48,7 @@ CASES = [
     ("profBonus(5)", "YARN.profBonus(5)", 3),
     ("profBonus(20)", "YARN.profBonus(20)", 6),
     # Species ASI is applied to the base score
-    ("elf dex 16 -> 18", "YARN.abilityScore(C, P, 'dex')", 18),
+        ("elf dex 16 + background ASI -> 18", "YARN.abilityScore(C, P, 'dex')", 18),
     ("dex mod +4", "YARN.abilityMod(C, P, 'dex')", 4),
     # Rogue is proficient in dex + int saves, not con
     ("dex save +7", "YARN.saveTotal(C, P, 'dex')", 7),

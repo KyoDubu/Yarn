@@ -210,6 +210,10 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 .wz-points { font-size: .8rem; color: var(--muted); }
 .wz-points.over { color: var(--danger); font-weight: 700; }
 
+.wz-bgasi { margin-top: .6rem; }
+.wz-bgasi-row { display: flex; align-items: center; gap: .6rem; margin: .35rem 0; }
+.wz-bgasi-label { flex: 1; font-weight: 600; font-size: .85rem; }
+
 .wz-roll-bar { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-bottom: .5rem; }
 .wz-pool { display: flex; flex-wrap: wrap; gap: .35rem; }
 .wz-chip {

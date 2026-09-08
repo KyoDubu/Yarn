@@ -113,7 +113,9 @@ def main() -> int:
         check("unknown subrace contributes nothing extra",
               "JSON.stringify(YARN.speciesASI(unknownSub))", '{"con":2}')
 
-        # abilityScore end-to-end: Hill Dwarf WIS 10 base -> 11
+        # abilityScore end-to-end: 2024 rules mean species contributes
+        # NOTHING - a Hill Dwarf's WIS/CON stay exactly at base until a
+        # Background ASI or campaign ASI adds something on top.
         page.evaluate(
             """() => {
                 window.HD = YARN.blankCharacter();
@@ -121,8 +123,13 @@ def main() -> int:
                 HD.abilities.wis = 10; HD.abilities.con = 14;
             }"""
         )
-        check("Hill Dwarf WIS 10 base -> 11 final", "YARN.abilityScore(HD, null, 'wis')", 11)
-        check("Hill Dwarf CON 14 base -> 16 final", "YARN.abilityScore(HD, null, 'con')", 16)
+        check("2024 rules: species contributes no ability bonus (wis stays 10)",
+              "YARN.abilityScore(HD, null, 'wis')", 10)
+        check("2024 rules: species contributes no ability bonus (con stays 14)",
+              "YARN.abilityScore(HD, null, 'con')", 14)
+        page.evaluate("() => { HD.backgroundAsi.wis = 2; }")
+        check("Background ASI is what actually moves the score now",
+              "YARN.abilityScore(HD, null, 'wis')", 12)
 
         # ---- speed / size overrides ---------------------------------------
         print("\n  -- speed / size overrides --")

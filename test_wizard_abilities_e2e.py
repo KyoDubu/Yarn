@@ -34,6 +34,11 @@ def main() -> int:
         page.click('[data-wz="pick:species:halfOrc"]')  # no subraces, no popup detour
         page.click('[data-wz="next"]')
         page.click('[data-wz="pick:background:Folk Hero"]')
+        # Folk Hero's 2024 ASI candidates are wis/str/con - spend the mandatory 3 points
+        # (wis+2, str+1) so "Next" actually unlocks.
+        page.click('[data-wz="bgasi:wis:1"]')
+        page.click('[data-wz="bgasi:wis:1"]')
+        page.click('[data-wz="bgasi:str:1"]')
         page.click('[data-wz="next"]')
 
     with sync_playwright() as pw:

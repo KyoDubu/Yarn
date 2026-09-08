@@ -44,8 +44,8 @@
   }
 
   function freshState() {
-    var assign = {}, direct = {};
-    YARN.ABILITY_KEYS.forEach(function (k) { assign[k] = null; direct[k] = 8; });
+    var assign = {}, direct = {}, bgAsi = {};
+    YARN.ABILITY_KEYS.forEach(function (k) { assign[k] = null; direct[k] = 8; bgAsi[k] = 0; });
     return {
       step: 0,
       mode: "standard",
@@ -53,6 +53,7 @@
       species: "human",
       subspecies: "",
       background: "Folk Hero",
+      bgAsi: bgAsi,          // 2024 rules: the ability bonus lives on Background, not Species
       method: "roll",
       pool: YARN.STANDARD_ARRAY.slice(),
       poolMeta: [],       // parallel dice breakdowns for the roll method
@@ -134,7 +135,7 @@
   function stepSpecies() {
     var sp = YARN.SPECIES.map(function (s) {
       var tag = Array.isArray(s.subraces) && s.subraces.length ? " \u00b7 has subraces" : "";
-      return { key: s.key, name: s.name, hint: s.size + " \u00b7 " + s.speed + "ft \u00b7 " + asiText(s.asi) + tag };
+      return { key: s.key, name: s.name, hint: s.size + " \u00b7 " + s.speed + "ft" + tag };
     });
     var species = YARN.speciesInfo(S.species);
     var subLine = "";
@@ -142,17 +143,18 @@
       var sub = YARN.subspeciesInfo(S.species, S.subspecies);
       subLine = '<div class="wz-subrace-bar">' +
         (sub
-          ? '<span class="wz-subrace-chosen">Subrace: <b>' + esc(sub.name) + "</b> (" + asiText(sub.asi) + ")</span>"
+          ? '<span class="wz-subrace-chosen">Subrace: <b>' + esc(sub.name) + "</b></span>"
           : '<span class="wz-subrace-chosen wz-subrace-missing">No subrace chosen yet</span>') +
         '<button class="wz-btn" data-wz="open-subrace">' + (sub ? "Change subrace" : "Choose subrace") + "</button>" +
         "</div>";
     }
-    return '<p class="wz-lead">Species sets your size, speed and (in the 2014 rules Yarn uses) your ability bonuses.</p>' +
+    var picked = YARN.speciesInfo(S.species);
+    return '<p class="wz-lead">Species sets your size, speed and other traits - your ability bonus comes from your ' +
+      "Background instead (2024 rules).</p>" +
       '<div class="wz-cards wz-cards-grid">' + radioCards(sp, S.species, "species", "key", "name", "hint") + "</div>" +
-      (species && species.blurb ? '<p class="wz-blurb">' + esc(species.name) + ": " + esc(species.blurb) + "</p>" : "") +
+      (picked && picked.blurb ? '<p class="wz-blurb">' + esc(picked.name) + ": " + esc(picked.blurb) + "</p>" : "") +
       subLine;
   }
-
   // Standalone popup for picking a subrace - opened automatically the moment
   // a species with subraces is chosen, and reopenable via "Change subrace".
   // Lives on top of the wizard modal rather than inline in the species list
@@ -161,7 +163,7 @@
     var species = YARN.speciesInfo(S.species);
     if (!species || !Array.isArray(species.subraces) || !species.subraces.length) { return ""; }
     var subs = species.subraces.map(function (r) {
-      return { key: r.key, name: r.name, hint: asiText(r.asi) + (r.speed ? " \u00b7 " + r.speed + "ft" : "") };
+      return { key: r.key, name: r.name, hint: r.speed ? (r.speed + "ft") : "" };
     });
     return '<div class="wz-suboverlay" data-wz="sub-scrim">' +
       '<div class="wz-submodal" role="dialog" aria-modal="true" aria-labelledby="wzSubTitle" data-wz-stop="1">' +
@@ -185,10 +187,36 @@
       return { key: b, name: b, hint: hint };
     });
     var picked = YARN.backgroundInfo(S.background);
-    return '<p class="wz-lead">Your background is your life before adventuring - it grants two fixed skill proficiencies. ' +
+    return '<p class="wz-lead">Your background is your life before adventuring - it grants two fixed skill proficiencies ' +
+      "and (2024 rules) your ability score bonus. " +
       '<button class="wz-link" data-wz="random-bg">surprise me</button></p>' +
       '<div class="wz-cards wz-cards-grid">' + radioCards(bg, S.background, "background", "key", "name", "hint") + "</div>" +
-      (picked && picked.blurb ? '<p class="wz-blurb">' + esc(S.background) + ": " + esc(picked.blurb) + "</p>" : "");
+      (picked && picked.blurb ? '<p class="wz-blurb">' + esc(S.background) + ": " + esc(picked.blurb) + "</p>" : "") +
+      backgroundAsiPicker();
+  }
+
+  // 2024 ability-score picker: spend exactly 3 points across the
+  // background's 3 candidate abilities, max +2 on any one of them.
+  function backgroundAsiPicker() {
+    var choices = YARN.backgroundAbilityChoices(S.background);
+    if (!choices.length) { return ""; }
+    var spent = YARN.backgroundAsiSpent(S.bgAsi);
+    var remaining = 3 - spent;
+    var rows = choices.map(function (k) {
+      var v = Number(S.bgAsi[k]) || 0;
+      var atMax = v >= 2 || remaining <= 0;
+      var atMin = v <= 0;
+      return '<div class="wz-bgasi-row">' +
+        '<span class="wz-bgasi-label">' + esc(abilityName(k)) + "</span>" +
+        '<button class="wz-step" data-wz="bgasi:' + k + ':-1" aria-label="decrease"' + (atMin ? " disabled" : "") + ">\u2212</button>" +
+        '<span class="wz-buyval">' + (v ? "+" + v : "0") + "</span>" +
+        '<button class="wz-step" data-wz="bgasi:' + k + ':1" aria-label="increase"' + (atMax ? " disabled" : "") + ">+</button>" +
+        "</div>";
+    }).join("");
+    return '<div class="wz-bgasi">' +
+      '<p class="wz-help">Pick your background\u2019s ability bonus: +2 to one and +1 to a different one, ' +
+      "or +1 to all three. " + '<span class="wz-points' + (remaining !== 0 ? " over" : "") + '">Points remaining: <b>' +
+      remaining + "</b></span></p>" + rows + "</div>";
   }
 
   function methodTabs() {
@@ -210,7 +238,7 @@
   // that used to be possible and just left "Next" disabled with zero
   // explanation, because poolFullyAssigned() rejects a repeated index.
   function assignTable() {
-    var speciesAsi = YARN.speciesASI(S);
+    var bgAsi = S.bgAsi || {};
     var usedBy = {}; // pool index -> ability key currently holding it
     YARN.ABILITY_KEYS.forEach(function (k) {
       var idx = S.assign[k];
@@ -226,27 +254,27 @@
       });
       var idx = S.assign[k];
       var base = (idx === null || idx === undefined) ? null : Number(S.pool[idx]);
-      var spB = speciesAsi[k] || 0;
-      var finalScore = base === null ? "\u2014" : (base + spB);
-      var mod = base === null ? "" : signed(YARN.mod(base + spB));
+      var bgB = bgAsi[k] || 0;
+      var finalScore = base === null ? "\u2014" : (base + bgB);
+      var mod = base === null ? "" : signed(YARN.mod(base + bgB));
       return "<tr><th>" + esc(abilityName(k)) + "</th>" +
         '<td><select data-wz="assign:' + k + '">' + opts + "</select></td>" +
-        '<td class="wz-num">' + (spB ? "+" + spB : "\u2014") + "</td>" +
+        '<td class="wz-num">' + (bgB ? "+" + bgB : "\u2014") + "</td>" +
         '<td class="wz-num"><b>' + finalScore + "</b></td>" +
         '<td class="wz-num wz-mod">' + mod + "</td></tr>";
     }).join("");
     return '<table class="wz-abilities"><thead><tr>' +
-      "<th>Ability</th><th>Assigned</th><th>Species</th><th>Total</th><th>Mod</th>" +
+      "<th>Ability</th><th>Assigned</th><th>Background</th><th>Total</th><th>Mod</th>" +
       "</tr></thead><tbody>" + rows + "</tbody></table>";
   }
 
   // Steppers for point-buy / free inputs for manual.
   function directTable() {
-    var speciesAsi = YARN.speciesASI(S);
+    var bgAsi = S.bgAsi || {};
     var isBuy = S.method === "pointbuy";
     var rows = YARN.ABILITY_KEYS.map(function (k) {
       var base = Number(S.direct[k]) || 8;
-      var spB = speciesAsi[k] || 0;
+      var bgB = bgAsi[k] || 0;
       var control;
       if (isBuy) {
         // 5e SRD point buy: 8-15 range, budget-gated. Both boundaries are
@@ -266,9 +294,9 @@
       }
       return "<tr><th>" + esc(abilityName(k)) + "</th>" +
         '<td class="wz-control">' + control + "</td>" +
-        '<td class="wz-num">' + (spB ? "+" + spB : "\u2014") + "</td>" +
-        '<td class="wz-num"><b>' + (base + spB) + "</b></td>" +
-        '<td class="wz-num wz-mod">' + signed(YARN.mod(base + spB)) + "</td></tr>";
+        '<td class="wz-num">' + (bgB ? "+" + bgB : "\u2014") + "</td>" +
+        '<td class="wz-num"><b>' + (base + bgB) + "</b></td>" +
+        '<td class="wz-num wz-mod">' + signed(YARN.mod(base + bgB)) + "</td></tr>";
     }).join("");
     return '<table class="wz-abilities"><thead><tr>' +
       "<th>Ability</th><th>Score</th><th>Species</th><th>Total</th><th>Mod</th>" +
@@ -344,14 +372,17 @@
     }).join("");
     var cls = YARN.classInfo(S.klass), sp = YARN.speciesInfo(S.species);
     var sub = YARN.subspeciesInfo(S.species, S.subspecies);
+    var bgAsiText = YARN.ABILITY_KEYS.filter(function (k) { return (S.bgAsi[k] || 0) > 0; })
+      .map(function (k) { return "+" + S.bgAsi[k] + " " + k.toUpperCase(); }).join(", ");
     return '<div class="wz-review">' +
       "<h3>" + esc(S.name || YARN.randomName()) + "</h3>" +
       '<p class="wz-summary">' +
         esc(sub ? sub.name : sp.name) + " " + esc(cls.name) + " \u00b7 " + esc(S.background) + " \u00b7 " + esc(S.alignment) +
         (S.mode === "homebrew" ? ' <span class="wz-tag">homebrew</span>' : "") + "</p>" +
       '<table class="wz-abilities wz-review-tbl"><tbody>' + abilityRows + "</tbody></table>" +
-      '<p class="wz-help muted">Species bonuses are already baked into these totals. ' +
-        "You can fine-tune everything on the sheet afterwards.</p>" +
+      (bgAsiText ? '<p class="wz-help muted">Background bonus: ' + esc(bgAsiText) + "</p>" : "") +
+      '<p class="wz-help muted">Your background\u2019s ability bonus is already baked into these totals ' +
+        "(2024 rules: species grants none). You can fine-tune everything on the sheet afterwards.</p>" +
       "</div>";
   }
 
@@ -367,6 +398,10 @@
       var sp = YARN.speciesInfo(S.species);
       if (sp && Array.isArray(sp.subraces) && sp.subraces.length) { return !!S.subspecies; }
       return true;
+    }
+    if (name === "background") {
+      var choices = YARN.backgroundAbilityChoices(S.background);
+      return !choices.length || YARN.backgroundAsiValid(S.bgAsi);
     }
     if (name === "abilities") {
       if (S.method === "standard" || S.method === "roll") { return poolFullyAssigned(); }
@@ -384,6 +419,7 @@
     c.species = S.species;
     c.subspecies = S.subspecies;
     c.background = S.background;
+    c.backgroundAsi = Object.assign({}, c.backgroundAsi, S.bgAsi);
     c.alignment = S.alignment;
     c.abilities = baseScores();
     c.personality = S.personality;
@@ -504,6 +540,11 @@
         if (args[0] === "subspecies") {
           S.subModalOpen = false; // picking one is the only thing to do in there - close it
         }
+        if (args[0] === "background") {
+          // A new background has a different 3-ability candidate set, so any
+          // prior allocation may no longer even be legal - start clean.
+          YARN.ABILITY_KEYS.forEach(function (k) { S.bgAsi[k] = 0; });
+        }
         render(); return;
 
       case "open-subrace": S.subModalOpen = true; render(); return;
@@ -518,6 +559,18 @@
       case "assign": {
         var v = el.value;
         S.assign[args[0]] = v === "" ? null : Number(v);
+        render(); return;
+      }
+      case "bgasi": {
+        var bk = args[0], bdelta = Number(args[1]);
+        var choices = YARN.backgroundAbilityChoices(S.background);
+        if (choices.indexOf(bk) === -1) { return; } // not a candidate for this background
+        var cur = Number(S.bgAsi[bk]) || 0;
+        var next = cur + bdelta;
+        if (next < 0 || next > 2) { return; }
+        var spentByOthers = YARN.backgroundAsiSpent(S.bgAsi) - cur;
+        if (spentByOthers + next > 3) { return; } // never exceed the 3-point budget
+        S.bgAsi[bk] = next;
         render(); return;
       }
       case "buy": {

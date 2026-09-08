@@ -128,6 +128,26 @@
     return html + "</select>";
   }
 
+  function backgroundAsiControls(char) {
+    var choices = YARN.backgroundAbilityChoices(char.background);
+    if (!choices.length) { return ""; }
+    var spent = YARN.backgroundAsiSpent(char.backgroundAsi);
+    var remaining = 3 - spent;
+    var fields = choices.map(function (k) {
+      var info = YARN.ABILITIES.filter(function (a) { return a.key === k; })[0];
+      var v = Number(char.backgroundAsi[k]) || 0;
+      return '<div class="field" style="display:inline-block;margin-right:.6rem;width:auto">' +
+        '<label>' + esc(info ? info.name : k) + "</label>" +
+        '<input type="number" min="0" max="2" data-type="number" data-restructure="1" ' +
+        'data-model="char.backgroundAsi.' + k + '" value="' + v + '" style="width:4rem">' +
+        "</div>";
+    }).join("");
+    return '<div class="field" style="margin-top:.4rem">' +
+      '<label>Background Ability Bonus <span class="muted" style="font-weight:normal">' +
+      "(2024 rules: split +2/+1 or spread +1/+1/+1 across these three - must total 3, currently " +
+      esc(String(spent)) + "/3)</span></label><div>" + fields + "</div></div>";
+  }
+
   function identityPanel(char, prog) {
     return '' +
       '<div class="panel span-2">' +
@@ -144,7 +164,7 @@
         "</div>" +
         '<div class="row">' +
           '<div class="field"><label>Background</label>' +
-            selectStrings(YARN.BACKGROUNDS, "char.background", char.background) + "</div>" +
+            selectStrings(YARN.BACKGROUNDS, "char.background", char.background).replace("<select ", '<select data-restructure="1" ') + "</div>" +
           '<div class="field"><label>Alignment</label>' +
             selectStrings(YARN.ALIGNMENTS, "char.alignment", char.alignment) + "</div>" +
           '<div class="field"><label>Level</label>' +
@@ -152,6 +172,7 @@
           '<div class="field"><label>XP</label>' +
             '<input type="number" min="0" data-type="number" data-model="prog.xp" value="' + (prog.xp || 0) + '"></div>' +
         "</div>" +
+        backgroundAsiControls(char) +
         '<div class="toggle-row">' +
           '<input type="checkbox" id="hbToggle" data-model="char.homebrew.enabled" data-restructure="1"' +
             (char.homebrew.enabled ? " checked" : "") + ">" +
@@ -178,7 +199,7 @@
       '<div class="panel">' +
         "<h2>Ability Scores</h2>" +
         '<p class="muted" style="font-size:.7rem;margin:.2rem 0 .6rem">' +
-          "Enter the base score. Species &amp; ASI bonuses are added automatically.</p>" +
+          "Enter the base score. Your Background's ability bonus (2024 rules) and any campaign ASI are added automatically.</p>" +
         '<div class="abilities">' + tiles + "</div>" +
       "</div>";
   }
@@ -418,6 +439,12 @@
       : (t.getAttribute("data-type") === "number" ? (t.value === "" ? 0 : Number(t.value)) : t.value);
     applyModel(model, val);
     if (model === "char.species") { applyModel("char.subspecies", ""); } // new species -> blank subrace
+    if (model === "char.background") {
+      // Different background = different 3-ability candidate set - a prior
+      // allocation may not even apply anymore, so start clean (mirrors the
+      // wizard's same reset-on-background-change behavior).
+      YARN.ABILITY_KEYS.forEach(function (k) { applyModel("char.backgroundAsi." + k, 0); });
+    }
     YARN.save();
     if (t.getAttribute("data-restructure")) { render(); }
     else { refreshDerived(); }

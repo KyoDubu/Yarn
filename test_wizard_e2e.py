@@ -56,8 +56,17 @@ def main() -> int:
         page.click('[data-wz="close-subrace"]')
         check("Done button closes the popup", page.query_selector(".wz-submodal") is None)
         page.click('[data-wz="next"]')
-        # Step 4: background -> Outlander
+        # Step 4: background -> Outlander, then spend its 2024 ASI (str+2, wis+1)
         page.click('[data-wz="pick:background:Outlander"]')
+        next_btn = page.query_selector('[data-wz="next"]')
+        check("Next disabled before spending the background's ability points",
+              next_btn.get_attribute("disabled") is not None)
+        page.click('[data-wz="bgasi:str:1"]')
+        page.click('[data-wz="bgasi:str:1"]')
+        page.click('[data-wz="bgasi:wis:1"]')
+        next_btn = page.query_selector('[data-wz="next"]')
+        check("Next enabled once exactly 3 background points are spent",
+              next_btn.get_attribute("disabled") is None)
         page.click('[data-wz="next"]')
         # Step 5: abilities -> auto-assign standard array for the class
         next_btn = page.query_selector('[data-wz="next"]')
@@ -83,15 +92,19 @@ def main() -> int:
         check("species is elf", made and made["species"] == "elf")
         check("subspecies is shadarKai", made and made["subspecies"] == "shadarKai")
         check("homebrew is on", made and made["homebrew"]["enabled"] is True)
-        # ranger suggested array puts 15 in DEX; elf adds +2 -> final 17
+        # 2024 rules: species contributes nothing - ranger's suggested DEX 15 stays 15.
         dex = page.evaluate("() => YARN.abilityScore(YARN.getCharacter(YARN.state.ui.activeCharId), "
                             "YARN.blankProgress(), 'dex')")
-        check("elf ranger DEX ends at 17", dex == 17)
-        # shadar-kai subrace stacks +1 CON on top of the base elf (no CON bonus)
-        con = page.evaluate("() => YARN.abilityScore(YARN.getCharacter(YARN.state.ui.activeCharId), "
-                            "YARN.blankProgress(), 'con')")
-        suggested_con = page.evaluate("() => YARN.SUGGESTED_ARRAY.ranger.con")
-        check("shadar-kai CON gets the +1 subrace bonus", con == suggested_con + 1)
+        check("elf ranger DEX stays at the suggested 15 (no species bonus)", dex == 15)
+        # ...but the Outlander background ASI we spent (str+2, wis+1) does land.
+        str_score = page.evaluate("() => YARN.abilityScore(YARN.getCharacter(YARN.state.ui.activeCharId), "
+                                  "YARN.blankProgress(), 'str')")
+        wis = page.evaluate("() => YARN.abilityScore(YARN.getCharacter(YARN.state.ui.activeCharId), "
+                            "YARN.blankProgress(), 'wis')")
+        suggested_str = page.evaluate("() => YARN.SUGGESTED_ARRAY.ranger.str")
+        suggested_wis = page.evaluate("() => YARN.SUGGESTED_ARRAY.ranger.wis")
+        check("Outlander background ASI (+2 STR) landed on the built character", str_score == suggested_str + 2)
+        check("Outlander background ASI (+1 WIS) landed on the built character", wis == suggested_wis + 1)
 
         print("\n  -- clone an existing character into a homebrew copy --")
         # make a plain standard character directly, select it, then clone
@@ -153,13 +166,32 @@ def main() -> int:
             "() => { const c = YARN.getCharacter(YARN.state.ui.activeCharId); "
             "return YARN.speciesASI(c).wis; }"
         )
-        check("Hill Dwarf grants +1 WIS via the sheet dropdown", wis_mod == 1)
+        check("Hill Dwarf's 2014-reference data still reports +1 WIS (historical only, not applied to the score)",
+              wis_mod == 1)
         # switching species back to Human should blank the stale subspecies
         page.select_option('select[data-model="char.species"]', "human")
         sub_after_switch = page.evaluate(
             "() => YARN.getCharacter(YARN.state.ui.activeCharId).subspecies"
         )
         check("switching species clears the stale subspecies", sub_after_switch == "")
+
+        print("\n  -- sheet's Background ability-bonus picker (2024 rules) --")
+        # Give the character a background with known candidates and drive its
+        # 3 numeric inputs directly, same generic data-model binding as any
+        # other sheet field.
+        page.select_option('select[data-model="char.background"]', "Sage")
+        page.fill('input[data-model="char.backgroundAsi.int"]', "2")
+        page.fill('input[data-model="char.backgroundAsi.wis"]', "1")
+        int_score = page.evaluate(
+            "() => YARN.abilityScore(YARN.getCharacter(YARN.state.ui.activeCharId), null, 'int')"
+        )
+        check("Sage's +2 INT (typed on the sheet) lands on the ability score", int_score == 12)
+        # switching to a different background should wipe the stale allocation
+        page.select_option('select[data-model="char.background"]', "Soldier")
+        int_after_switch = page.evaluate(
+            "() => YARN.getCharacter(YARN.state.ui.activeCharId).backgroundAsi.int"
+        )
+        check("switching background clears the stale ability allocation", int_after_switch == 0)
 
         browser.close()
 

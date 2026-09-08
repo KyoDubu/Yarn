@@ -1,16 +1,77 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-04 - Current build: **v1.8 "live on GitHub Pages, dragon logo and all"**_
+_Last updated: 2026-09-08 - Current build: **v1.9 "2024 rules: ASI moves from Species to Background"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.8 and pushed to
+> Tree is clean, everything committed through v1.9 and pushed to
 > `https://github.com/KyoDubu/Yarn` (main branch). Nothing in flight.
 >
 > **LIVE URL:** https://kyodubu.github.io/Yarn/ - real GitHub Pages
-> hosting, verified working end-to-end (real 200, app renders, zero
-> console errors). Cloud sync's Firestore rules and the GitHub Pages
-> domain ARE both confirmed live as of 2026-09-08 - sign-in and party
-> sync verified working for a real (non-localhost) user.
+> hosting, verified working end-to-end.
+>
+> **v1.9 - the big rules migration, 2014 -> 2024:** D confirmed Yarn
+> should follow the 2024 PHB's ability-score model: **species now
+> grants ZERO ability bonus**, full stop, for every species and every
+> subrace. The bonus moved to **Background** instead - at character
+> creation you spend exactly 3 points across your background's 3
+> candidate abilities, either +2 to one and +1 to a different one, or
+> +1 to all three (never more than +2 on any single ability).
+>
+> What changed, file by file:
+> - `app.core.js` - `YARN.abilityScore()` no longer calls `speciesASI()`;
+>   it now reads `char.backgroundAsi[key]` instead. Added
+>   `YARN.backgroundAsiSpent()` / `YARN.backgroundAsiValid()` (the only
+>   validity rule that matters: total spent === 3 and no ability > +2 -
+>   with only 3 slots capped at 0-2 each, that's mathematically enough
+>   to guarantee a legal {2,1,0} or {1,1,1} split, nothing else can sum
+>   to 3). `blankCharacter()` gained a `backgroundAsi` field, backfilled
+>   for old saves via `normalize()`.
+> - `YARN.speciesASI()` / the old 2014 per-species/subrace `asi` data in
+>   `app.species.js` were **deliberately left in place, not deleted** -
+>   they're now pure historical/reference data with zero effect on the
+>   math. Ripping out ~110 `asi: {...}` entries across 41 species + all
+>   their subraces for a purely cosmetic cleanup was judged not worth
+>   the diff risk; `speciesASI()`'s doc comment now says clearly that
+>   it's unused by `abilityScore()`. `speciesProfile()` (feeds the sheet's
+>   "Species Traits" panel) had its now-pointless `asi` field removed
+>   from the bundle since nothing rendered it anyway.
+> - `app.rules.js` - added `YARN.BACKGROUND_ABILITY_CHOICES` / 
+>   `YARN.backgroundAbilityChoices(name)`, a 3-ability trio per
+>   background. Yarn kept its original 13-background list rather than
+>   swapping in the 2024 PHB's renamed 16-background set (Acolyte,
+>   Artisan, Farmer, Guide, Wayfarer, etc.) - that would be a much
+>   bigger, separate content migration. Each existing background's trio
+>   was picked to match its already-defined skills (e.g. Hermit's
+>   medicine/religion skills -> wis/int/con candidates), not lifted
+>   verbatim from the real PHB text.
+> - `app.wizard.js` - the Background step now shows a point-buy-style
+>   stepper picker (reusing the existing `.wz-step`/`.wz-buyval`/
+>   `.wz-points` styling from the point-buy ability step) for its 3
+>   candidate abilities. `canAdvance()` blocks "Next" until exactly 3
+>   points are spent. Picking a *new* background resets the allocation
+>   to zero (a different background has a different 3-ability set, so a
+>   prior allocation may not even be legal anymore). The abilities step's
+>   assign/direct tables swapped their always-now-zero "Species" bonus
+>   column for a "Background" column showing the real contributor. The
+>   species step's card hints and the subrace popup dropped their now-
+>   inactive "+2 DEX"-style text since it no longer means anything.
+> - `app.ui.js` - the character sheet's Background dropdown grew an
+>   inline 3-input ability-bonus picker (plain numbers, no hard
+>   validation - matches the sheet's existing "no guard rails, type what
+>   your table agreed on" philosophy elsewhere). Changing background on
+>   the sheet resets the allocation to zero, mirroring the wizard.
+> - Tests updated across the board (`test_species.py`, `test_rules.py`,
+>   `test_wizard.py`, `test_wizard_e2e.py`,
+>   `test_wizard_abilities_e2e.py`) to stop asserting species contributes
+>   an ability bonus, and to cover the new background-ASI plumbing
+>   (validity math, wizard gating + stepper clicks, sheet-side inputs,
+>   reset-on-change in both places).
+>
+> **Full test suite: 191 assertions across 7 files, all green** -
+> `test_rules.py` (38), `test_species.py` (28), `test_homebrew.py` (21),
+> `test_wizard.py` (45), `test_wizard_e2e.py` (31),
+> `test_wizard_abilities_e2e.py` (17), `test_sync_mock.py` (11).
+> Re-run any of them with `.venv\Scripts\python -u <file>.py`.
 >
 > **2026-09-08 correction:** an earlier handoff note here claimed the
 > `yarnParties` Firestore rules block had already been pasted into the
@@ -26,12 +87,6 @@ _Last updated: 2026-09-04 - Current build: **v1.8 "live on GitHub Pages, dragon 
 > Google does NOT require adding each player's email anywhere in the
 > Firebase console - any Google account can authenticate; the
 > `members` array per-party-doc is what actually gates data access.
->
-> **Full test suite: 170 assertions across 7 files, all green** -
-> `test_rules.py` (38), `test_homebrew.py` (21), `test_wizard.py` (33),
-> `test_wizard_e2e.py` (27), `test_species.py` (27),
-> `test_wizard_abilities_e2e.py` (12), `test_sync_mock.py` (12).
-> Re-run any of them with `.venv\Scripts\python -u <file>.py`.
 >
 > **What happened since v1.7:**
 > - Pushed the repo to GitHub for real (`git remote add origin` +
@@ -62,9 +117,11 @@ _Last updated: 2026-09-04 - Current build: **v1.8 "live on GitHub Pages, dragon 
 > 1. Draconic ancestry breath-weapon mechanics are recorded as trait *text*
 >    only (e.g. "Acid damage - 5x30 ft line, Dex save") - not an actual
 >    computed/rollable feature.
-> 2. Edition is still 2014 SRD (species-ASI) by default - D was shown the
->    2024 rules (background-ASI) and hasn't confirmed a switch. See the
->    "Key 2024 Rules Distinction" section below before touching ASI math.
+> 2. ~~Edition is still 2014 SRD (species-ASI) by default~~ - **RESOLVED in
+>    v1.9**: D confirmed the 2024 rules (background-ASI). Species now grants
+>    zero ability bonus everywhere; Background grants a player-chosen +2/+1
+>    or +1/+1/+1 split across 3 candidate abilities. See the v1.9 handoff
+>    note above for the full breakdown.
 > 3. Custom domain (D considered spinayarn.com) shelved - it's taken/
 >    parked via Afternic. `kyodubu.github.io/Yarn` works fine as-is;
 >    revisit only if D finds a name they actually want to buy.

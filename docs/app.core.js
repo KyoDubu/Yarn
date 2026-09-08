@@ -28,6 +28,11 @@
       background: "Folk Hero",
       alignment: "True Neutral",
       abilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+      // 2024 rules: species grants NO ability bonus - the bonus moved to
+      // Background instead (player picks +2/+1 split or +1/+1/+1 spread
+      // across that background's 3 candidate abilities). See
+      // YARN.backgroundAbilityChoices / YARN.abilityScore.
+      backgroundAsi: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
       saveProfs: [],
       skillProfs: [],
       skillExpertise: [],
@@ -119,6 +124,7 @@
       blank.id = c.id || blank.id;
       fillDefaults(c, blank);
       c.abilities = fillDefaults(c.abilities || {}, blank.abilities);
+      c.backgroundAsi = fillDefaults(c.backgroundAsi || {}, blank.backgroundAsi);
       c.homebrew = fillDefaults(c.homebrew || {}, blank.homebrew);
       if (!Array.isArray(c.homebrew.customSkills)) { c.homebrew.customSkills = []; }
       if (!Array.isArray(c.homebrew.currencies)) { c.homebrew.currencies = []; }
@@ -226,20 +232,44 @@
     return 2 + Math.floor((lvl - 1) / 4);
   };
 
-  // Base score + species ASI + campaign-earned ASI. A character can have
-  // different final scores in different campaigns, which is correct: they
-  // levelled up separately.
+  // Base score + background ASI (2024 rules - species grants no ability
+  // bonus at all, see DEVLOG v1.9) + campaign-earned ASI. A character can
+  // have different final scores in different campaigns, which is correct:
+  // they levelled up separately.
   YARN.abilityScore = function (char, prog, key) {
     if (!char) { return 10; }
     var base = Number(char.abilities[key]) || 10;
-    var speciesBonus = YARN.speciesASI(char)[key] || 0;
+    var backgroundBonus = (char.backgroundAsi && char.backgroundAsi[key]) || 0;
     var earned = (prog && prog.asi && prog.asi[key]) || 0;
-    return base + speciesBonus + earned;
+    return base + backgroundBonus + earned;
   };
 
-  // Combined ability bonuses from species + chosen subspecies. Bonuses
-  // STACK (2014 rule): e.g. a Hill Dwarf gets the base Dwarf's +2 CON AND
-  // the Hill subrace's +1 WIS. Unknown/blank subspecies contributes nothing.
+  // 2024 background ASI math. A background offers exactly 3 candidate
+  // abilities (YARN.backgroundAbilityChoices); you spend exactly 3 points
+  // across them, never more than +2 on one. Because there are only 3 slots
+  // each capped 0-2, "spends exactly 3, none over 2" is enough to guarantee
+  // a RAW-legal split - there is no other way to total 3 across three
+  // 0-2 slots except a {2,1,0} permutation or {1,1,1}, both legal.
+  YARN.backgroundAsiSpent = function (asiMap) {
+    return YARN.ABILITY_KEYS.reduce(function (sum, k) {
+      return sum + (Number(asiMap && asiMap[k]) || 0);
+    }, 0);
+  };
+  YARN.backgroundAsiValid = function (asiMap) {
+    if (!asiMap) { return false; }
+    var inRange = YARN.ABILITY_KEYS.every(function (k) {
+      var v = Number(asiMap[k]) || 0;
+      return v >= 0 && v <= 2;
+    });
+    return inRange && YARN.backgroundAsiSpent(asiMap) === 3;
+  };
+
+  // Combined ability bonuses from species + chosen subspecies. HISTORICAL
+  // REFERENCE ONLY as of the 2024 rules migration - this used to feed
+  // abilityScore() directly (2014 rule: species gives a fixed bonus,
+  // subrace bonuses stack on top). It's kept around because the source
+  // data (app.species.js) still records the old 2014 numbers for lore
+  // accuracy, but nothing in the live math calls this anymore.
   YARN.speciesASI = function (char) {
     var out = {};
     if (!char) { return out; }
@@ -275,6 +305,8 @@
   // One bundle for the sheet's "Species Traits" panel: display-only text,
   // never fed back into the math. Base species traits/languages come first,
   // then the subspecies' - matching how a player reads a stat block.
+  // (No `asi` field here - species grants zero ability bonus under 2024
+  // rules; see YARN.speciesASI's comment if you need the old 2014 numbers.)
   YARN.speciesProfile = function (char) {
     var sp = char ? YARN.speciesInfo(char.species) : null;
     var sub = char ? YARN.subspeciesInfo(char.species, char.subspecies) : null;
@@ -283,7 +315,6 @@
       subName: sub ? sub.name : "",
       size: YARN.speciesSize(char),
       speed: YARN.speciesSpeed(char),
-      asi: YARN.speciesASI(char),
       languages: (sp && sp.languages ? sp.languages.slice() : []).concat(sub && sub.languages ? sub.languages : []),
       traits: (sp && sp.traits ? sp.traits.slice() : []).concat(sub && sub.traits ? sub.traits : [])
     };

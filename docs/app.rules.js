@@ -95,6 +95,34 @@
     "Urchin":        { skills: ["sleightOfHand", "stealth"], tools: ["Disguise kit", "Thieves' tools"], languages: 0, feature: "City Secrets", blurb: "A streetwise survivor who grew up with nothing and learned to take what you needed." }
   };
 
+  // ---- 2024 background ability score choices --------------------------
+  // Each background lists 3 candidate abilities (2024 PHB pattern). At
+  // creation you spend exactly 3 points across them: +2 to one and +1 to
+  // a different one, OR +1 to all three - see YARN.backgroundAsiValid.
+  // Yarn keeps its original 13-background list (rather than swapping in
+  // the 2024 PHB's renamed set) and assigns each a sensible 3-ability trio
+  // built from its existing governing skills, so the migration is scoped
+  // to "where does the ASI come from" without also rewriting every
+  // background's skills/tools/flavor into the newer official set.
+  YARN.BACKGROUND_ABILITY_CHOICES = {
+    "Acolyte":       ["wis", "int", "cha"],
+    "Charlatan":     ["cha", "dex", "int"],
+    "Criminal":      ["cha", "dex", "con"],
+    "Entertainer":   ["dex", "cha", "str"],
+    "Folk Hero":     ["wis", "str", "con"],
+    "Guild Artisan": ["wis", "cha", "dex"],
+    "Hermit":        ["wis", "int", "con"],
+    "Noble":         ["int", "cha", "wis"],
+    "Outlander":     ["str", "wis", "con"],
+    "Sage":          ["int", "wis", "con"],
+    "Sailor":        ["str", "dex", "wis"],
+    "Soldier":       ["str", "con", "cha"],
+    "Urchin":        ["dex", "int", "cha"]
+  };
+  YARN.backgroundAbilityChoices = function (name) {
+    return YARN.BACKGROUND_ABILITY_CHOICES[name] || [];
+  };
+
   YARN.ALIGNMENTS = [
     "Lawful Good", "Neutral Good", "Chaotic Good",
     "Lawful Neutral", "True Neutral", "Chaotic Neutral",

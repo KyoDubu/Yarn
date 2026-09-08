@@ -121,10 +121,15 @@ def main() -> int:
               "YARN.Wizard._debug.buildCharacter().homebrew.enabled", True)
         check("built char klass", "YARN.Wizard._debug.buildCharacter().klass", "wizard")
         check("built char name", "YARN.Wizard._debug.buildCharacter().name", "Testina")
-        # species ASI applies through the normal math: elf dex 15 base -> 17
-        check("elf dex 15+2 = 17",
+        # species ASI is gone under 2024 rules - elf dex 15 base stays 15.
+        check("2024 rules: elf gets no species dex bonus",
               "(() => { const c = YARN.Wizard._debug.buildCharacter(); "
-              "return YARN.abilityScore(c, YARN.blankProgress(), 'dex'); })()", 17)
+              "return YARN.abilityScore(c, YARN.blankProgress(), 'dex'); })()", 15)
+        # the Background ASI picker is what actually adds a bonus now.
+        page.evaluate("() => { const S = YARN.Wizard._debug.state(); S.bgAsi.int = 2; S.bgAsi.wis = 1; }")
+        check("Sage background ASI (+2 INT) lands on the built character",
+              "(() => { const c = YARN.Wizard._debug.buildCharacter(); "
+              "return YARN.abilityScore(c, YARN.blankProgress(), 'int'); })()", 16)
         # a missing assignment blocks advancement
         page.evaluate("() => { YARN.Wizard._debug.state().assign.cha = null; }")
         check("incomplete pool blocks Next",
@@ -143,6 +148,40 @@ def main() -> int:
               "YARN.SUGGESTED_ARRAY.rogue.dex", 15)
         check("standard array is the classic six",
               "YARN.STANDARD_ARRAY.join(',')", "15,14,13,12,10,8")
+
+        # ---- 2024 background ASI (replaces the old species-ASI model) ----
+        print("\n  -- background ASI (2024 rules) --")
+        check("Sage offers int/wis/con as candidates",
+              "JSON.stringify(YARN.backgroundAbilityChoices('Sage'))", '["int","wis","con"]')
+        check("unknown background offers nothing",
+              "JSON.stringify(YARN.backgroundAbilityChoices('Nonsense'))", "[]")
+        check("2/1 split (int+2, wis+1) is valid",
+              "YARN.backgroundAsiValid({str:0,dex:0,con:0,int:2,wis:1,cha:0})", True)
+        check("1/1/1 spread (int+1,wis+1,con+1) is valid",
+              "YARN.backgroundAsiValid({str:0,dex:0,con:1,int:1,wis:1,cha:0})", True)
+        check("only 2 points spent is invalid (must total exactly 3)",
+              "YARN.backgroundAsiValid({str:0,dex:0,con:0,int:2,wis:0,cha:0})", False)
+        check("+3 to one ability is invalid (cap is +2)",
+              "YARN.backgroundAsiValid({str:0,dex:0,con:0,int:3,wis:0,cha:0})", False)
+        check("backgroundAsiSpent sums correctly",
+              "YARN.backgroundAsiSpent({str:0,dex:0,con:1,int:1,wis:1,cha:0})", 3)
+
+        page.evaluate(
+            """() => {
+                YARN.state = YARN.normalize({characters: [], campaigns: []});
+                YARN.Wizard.open({ onCreate: () => {} });
+                const S = YARN.Wizard._debug.state();
+                S.step = 3;              // the background step
+                S.background = 'Sage';
+            }"""
+        )
+        check("background step blocks Next until 3 points are spent",
+              "YARN.Wizard._debug.canAdvance()", False)
+        page.evaluate("() => { const S = YARN.Wizard._debug.state(); S.bgAsi.int = 2; S.bgAsi.wis = 1; }")
+        check("background step allows Next once exactly 3 are spent",
+              "YARN.Wizard._debug.canAdvance()", True)
+        # picking a new background wipes the prior allocation - covered in the e2e suite
+        page.evaluate("() => { YARN.Wizard.close(); }")
 
         browser.close()
 
