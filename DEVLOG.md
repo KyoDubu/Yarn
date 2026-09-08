@@ -1,23 +1,47 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-04 - Current build: **v1.7 "cloud sync joins the party"**_
+_Last updated: 2026-09-04 - Current build: **v1.8 "live on GitHub Pages, dragon logo and all"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.7. Nothing in
-> flight, nothing half-finished - safe to restart any time.
+> Tree is clean, everything committed through v1.8 and pushed to
+> `https://github.com/KyoDubu/Yarn` (main branch). Nothing in flight.
+>
+> **LIVE URL:** https://kyodubu.github.io/Yarn/ - real GitHub Pages
+> hosting, verified working end-to-end (real 200, app renders, zero
+> console errors). Cloud sync's Firestore rules ARE pasted into the
+> Firebase console and the GitHub Pages domain IS authorized - sign-in
+> should work for real users now, not just localhost.
 >
 > **Full test suite: 170 assertions across 7 files, all green** -
 > `test_rules.py` (38), `test_homebrew.py` (21), `test_wizard.py` (33),
 > `test_wizard_e2e.py` (27), `test_species.py` (27),
-> `test_wizard_abilities_e2e.py` (12), `test_sync_mock.py` (12, new).
+> `test_wizard_abilities_e2e.py` (12), `test_sync_mock.py` (12).
 > Re-run any of them with `.venv\Scripts\python -u <file>.py`.
 >
-> **Housekeeping note:** `yarn.html` was silently gitignored this whole
-> time (Windows git case-folded a leftover `Yarn.html` build-artifact rule
-> from Budget's `.gitignore` onto it) - it's the real hand-written source,
-> not a generated file, since `build.py` doesn't exist yet. Fixed and
-> `yarn.html` is now tracked for real as of v1.7. If anything before this
-> commit looked "clean" in git, the actual game file wasn't in it.
+> **What happened since v1.7:**
+> - Pushed the repo to GitHub for real (`git remote add origin` +
+>   push) - it didn't exist as a remote before.
+> - Fixed a GitHub Pages build failure: the `docs/` folder was tracked as
+>   `Docs` (capital D) - fine on case-insensitive Windows, but GitHub's
+>   Linux build runner is case-sensitive and couldn't find lowercase
+>   `docs/.nojekyll`, so Jekyll ran instead of a raw static serve and
+>   crashed. Renamed the tracked folder to `docs` via a two-step `git mv`.
+>   `Docs/` also physically held local-only reference material (character
+>   sheet PDF + screenshot) - excluded those two files by name in
+>   `.gitignore` rather than the whole folder.
+> - Fixed GitHub's default branch mismatch (repo defaulted to `master`,
+>   local pushed to both `master`/`main` at different points) - settled on
+>   `main` as the one true branch, deleted `master`.
+> - Added a real logo: `Static/yarn.png` (a hand-drawn dragon wrapped
+>   around a ball of yarn, red silhouette, no text - D found this after an
+>   earlier attempt at hand-coded SVG vector art didn't land a convincing
+>   dragon after several tries). Wired in as favicon + topbar branding
+>   (replacing the yarn-ball emoji), sized at 56x56 in the topbar.
+> - `build_pages.py` extended with an `ASSET_DIRS` list so subfolders like
+>   `Static/` get copied into `docs/` on every rebuild. Also hardened
+>   against a `PermissionError` from `shutil.rmtree` - this machine's repo
+>   lives under OneDrive, which can transiently lock a just-synced folder;
+>   switched to mkdir+overwrite-in-place instead of rmtree+copytree.
 >
 > **Open threads from prior sessions (D hasn't picked yet):**
 > 1. Draconic ancestry breath-weapon mechanics are recorded as trait *text*
@@ -26,17 +50,15 @@ _Last updated: 2026-09-04 - Current build: **v1.7 "cloud sync joins the party"**
 > 2. Edition is still 2014 SRD (species-ASI) by default - D was shown the
 >    2024 rules (background-ASI) and hasn't confirmed a switch. See the
 >    "Key 2024 Rules Distinction" section below before touching ASI math.
-> 3. Cloud sync (v1.7) ships with a real public Firebase web config wired
->    up already, but the `firestore.rules` for the new `yarnParties`
->    collection still need to be pasted into the Firebase console by hand
->    (no `firebase`/`gcloud` CLI in this environment) before sign-in will
->    actually work end-to-end for real users. Until then, sign-in will
->    open Google's popup fine but Firestore reads/writes will be rejected.
+> 3. Custom domain (D considered spinayarn.com) shelved - it's taken/
+>    parked via Afternic. `kyodubu.github.io/Yarn` works fine as-is;
+>    revisit only if D finds a name they actually want to buy.
 >
 > Everything else (character CRUD, campaigns, derived stats, homebrew layer,
 > creation wizard, 41 species/subraces with stacking ASI, background
-> proficiencies, subrace picker popup, ability-score usability fixes) is
-> built and tested. See the Build Log at the bottom for the full history.
+> proficiencies, subrace picker popup, ability-score usability fixes, cloud
+> sync) is built, tested, and live. See the Build Log at the bottom for
+> the full history.
 
 A single-page, offline-first **D&D character builder and campaign tracker**.
 Sibling project to the Budget Planner: same architecture, same Firebase project,
