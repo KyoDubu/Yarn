@@ -416,7 +416,9 @@
   function canAdvance() {
     var name = STEPS[S.step];
     if (name === "concept") {
-      return !!(S.concept.fantasy || S.concept.description.trim());
+      // Concept is helpful context, never a gate. Characters can start from
+      // mechanics and develop their story later.
+      return true;
     }
     if (name === "species") {
       var sp = YARN.speciesInfo(S.species);

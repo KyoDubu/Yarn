@@ -111,6 +111,9 @@ def main() -> int:
             }"""
         )
         check("pool fully assigned", "YARN.Wizard._debug.poolFullyAssigned()", True)
+        page.evaluate("() => { YARN.Wizard._debug.state().step = 0; }")
+        check("concept step is skippable", "YARN.Wizard._debug.canAdvance()", True)
+        page.evaluate("() => { YARN.Wizard._debug.state().step = 5; }")
         check("can advance when assigned", "YARN.Wizard._debug.canAdvance()", True)
         # base scores follow the assignment (pre-species)
         check("base str = 8 (slot 5)", "YARN.Wizard._debug.baseScores().str", 8)
