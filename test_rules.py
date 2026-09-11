@@ -446,6 +446,71 @@ def main() -> int:
             if not ok:
                 failures.append(label)
 
+        # ---- tool proficiencies + languages: fixed grants vs. "One X"/
+        # "of choice" slots the player has to fill in themselves ----------
+        print("\n  -- tool tracker: 'One X' background tools need a player pick, literal ones don't --")
+        tools_case = page.evaluate(
+            """() => {
+                const full = YARN.normalize({ characters: [
+                    { id: 'tt1', name: 'Watcher', klass: 'fighter', species: 'human',
+                      background: 'Guard', toolProfs: ['Dice set'] },
+                    { id: 'tt2', name: 'Pathfinder', klass: 'ranger', species: 'human',
+                      background: 'Guide' }
+                ] });
+                const guard = full.characters[0], guide = full.characters[1];
+                return {
+                    guardFixed: YARN.backgroundToolProfs(guard),
+                    guardSlots: YARN.toolChoiceSlots(guard),
+                    guardAll: YARN.allToolProfs(guard),
+                    guideFixed: YARN.backgroundToolProfs(guide),
+                    guideSlots: YARN.toolChoiceSlots(guide),
+                    guideAll: YARN.allToolProfs(guide)
+                };
+            }"""
+        )
+        tools_cases = [
+            ("Guard ('One gaming set') has zero FIXED tools", tools_case["guardFixed"], []),
+            ("Guard has exactly 1 tool-choice slot", tools_case["guardSlots"], 1),
+            ("Guard's allToolProfs is just the player's chosen 'Dice set'", tools_case["guardAll"], ["Dice set"]),
+            ("Guide ('Cartographer's tools') has it as a FIXED grant", tools_case["guideFixed"], ["Cartographer's tools"]),
+            ("Guide has zero tool-choice slots (nothing to pick)", tools_case["guideSlots"], 0),
+            ("Guide's allToolProfs is just the fixed grant", tools_case["guideAll"], ["Cartographer's tools"]),
+        ]
+        for label, actual, expected in tools_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
+        print("\n  -- language tracker: species 'of choice' slots + background's bonus-language count --")
+        langs_case = page.evaluate(
+            """() => {
+                const full = YARN.normalize({ characters: [{
+                    id: 'tl1', name: 'Scholar', species: 'human', klass: 'wizard',
+                    background: 'Sage', languages: ['Draconic']
+                }] });
+                const ch = full.characters[0];
+                return {
+                    fixed: YARN.speciesFixedLanguages(ch),
+                    slots: YARN.languageChoiceSlots(ch),
+                    all: YARN.allLanguages(ch)
+                };
+            }"""
+        )
+        langs_cases = [
+            ("Human's FIXED language is just Common ('one language of choice' filtered out)",
+             langs_case["fixed"], ["Common"]),
+            ("slots = 1 (Human's own choice) + 2 (Sage's bonus languages) = 3", langs_case["slots"], 3),
+            ("allLanguages = fixed Common + the player's chosen Draconic", langs_case["all"], ["Common", "Draconic"]),
+        ]
+        for label, actual, expected in langs_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
         browser.close()
 
     print("")

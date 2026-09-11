@@ -264,6 +264,38 @@ def main() -> int:
         con_removed = page.inner_text('[data-out="score.con"]')
         check("removing the feat drops the CON score back down", con_removed == con_before)
 
+        print("\n  -- sheet's Proficiencies panel: tool + language trackers, driven through the UI --")
+        # Guard grants a 'One gaming set' tool (1 open choice slot, 0 fixed
+        # tools) and 0 bonus languages; the character is still Human (1 open
+        # language slot from "one language of choice"). Switching background
+        # is safe here - this is the last section in the file.
+        page.select_option('select[data-model="char.background"]', "Guard")
+
+        dialog_answers.append("Playing card set")
+        page.click('[data-action="add-tool"]')
+        prof_text = page.inner_text(".wrap")
+        check("Proficiencies panel lists the chosen tool", "Playing card set" in prof_text)
+
+        # Guard only has 1 tool-choice slot, already spent - this should hit
+        # the level-gate-style alert, not a prompt, and not crash.
+        page.click('[data-action="add-tool"]')
+        prof_text2 = page.inner_text(".wrap")
+        check("a second tool add is blocked - still just the one chosen tool",
+              prof_text2.count("Playing card set") == 1)
+
+        dialog_answers.append("Draconic")
+        page.click('[data-action="add-language"]')
+        prof_text3 = page.inner_text(".wrap")
+        check("Proficiencies panel lists the chosen language", "Draconic" in prof_text3)
+
+        page.click('[data-action="del-language:Draconic"]')
+        prof_text4 = page.inner_text(".wrap")
+        check("removing the language drops it from the panel", "Draconic" not in prof_text4)
+
+        page.click('[data-action="del-tool:Playing card set"]')
+        prof_text5 = page.inner_text(".wrap")
+        check("removing the tool drops it from the panel", "Playing card set" not in prof_text5)
+
         browser.close()
 
     print("")

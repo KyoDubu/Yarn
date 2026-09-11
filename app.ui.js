@@ -364,10 +364,12 @@
       return s ? s.name : k;
     });
     var tools = info.tools.length
-      ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Tools: " + info.tools.map(esc).join(", ") + "</p>"
+      ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Tools: " + info.tools.map(esc).join(", ") +
+        " <span class=\"muted\">(pick specifics in the Proficiencies panel)</span></p>"
       : "";
     var langs = info.languages
-      ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Languages: " + info.languages + " of your choice</p>"
+      ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Languages: " + info.languages +
+        " of your choice <span class=\"muted\">(pick them in the Proficiencies panel)</span></p>"
       : "";
     // 2014-style backgrounds carry `feature` (a roleplay perk); the 2024
     // additions carry `originFeat` instead (a granted feat - see
@@ -414,6 +416,42 @@
       "</div>";
   }
 
+  // ---- render: tool proficiencies + languages ---------------------------
+  // Fixed grants (background's literal tools, species' literal languages)
+  // render read-only; "of choice" slots the player has filled in render
+  // with a remove button. This is the interactive counterpart to the raw
+  // text summary in backgroundPanel()/traitsPanel().
+  function proficienciesPanel(char) {
+    var fixedTools = YARN.backgroundToolProfs(char);
+    var chosenTools = Array.isArray(char.toolProfs) ? char.toolProfs : [];
+    var toolSlots = YARN.toolChoiceSlots(char);
+    var toolRows = fixedTools.map(function (t) {
+      return '<li><span class="grow">' + esc(t) + ' <span class="badge">background</span></span></li>';
+    }).concat(chosenTools.map(function (t) {
+      return '<li><span class="grow">' + esc(t) + '</span>' +
+        '<button class="danger" data-action="del-tool:' + esc(t) + '" title="Remove">\u00d7</button></li>';
+    })).join("");
+
+    var fixedLangs = YARN.speciesFixedLanguages(char);
+    var chosenLangs = Array.isArray(char.languages) ? char.languages : [];
+    var langSlots = YARN.languageChoiceSlots(char);
+    var langRows = fixedLangs.map(function (l) {
+      return '<li><span class="grow">' + esc(l) + ' <span class="badge">species</span></span></li>';
+    }).concat(chosenLangs.map(function (l) {
+      return '<li><span class="grow">' + esc(l) + '</span>' +
+        '<button class="danger" data-action="del-language:' + esc(l) + '" title="Remove">\u00d7</button></li>';
+    })).join("");
+
+    return '<div class="panel"><h2>Proficiencies</h2>' +
+      "<h3 style=\"margin-bottom:.2rem\">Tools (" + chosenTools.length + "/" + toolSlots + " chosen)</h3>" +
+      (toolRows ? '<ul class="linelist">' + toolRows + "</ul>" : '<p class="muted">None yet.</p>') +
+      '<button class="ghost" data-action="add-tool" style="margin-top:.3rem">+ Add tool</button>' +
+      "<h3 style=\"margin:.6rem 0 .2rem\">Languages (" + chosenLangs.length + "/" + langSlots + " chosen)</h3>" +
+      (langRows ? '<ul class="linelist">' + langRows + "</ul>" : '<p class="muted">None yet.</p>') +
+      '<button class="ghost" data-action="add-language" style="margin-top:.3rem">+ Add language</button>' +
+      "</div>";
+  }
+
   function resourcesPanel(char, prog) {
     if (!char.homebrew.enabled) { return ""; }
     var rows = char.homebrew.resources.map(function (r) {
@@ -454,7 +492,7 @@
         identityPanel(char, prog) +
         '<div>' + abilitiesPanel(char) + traitsPanel(char) + "</div>" +
         '<div>' + combatPanel(char, prog) + savesPanel(char) + currencyPanel(char, prog) + "</div>" +
-        '<div>' + skillsPanel(char) + backgroundPanel(char) + featsPanel(char, prog) + resourcesPanel(char, prog) + "</div>" +
+        '<div>' + skillsPanel(char) + backgroundPanel(char) + featsPanel(char, prog) + proficienciesPanel(char) + resourcesPanel(char, prog) + "</div>" +
         "</div>";
     }
 
@@ -658,6 +696,54 @@
       if (!dfProg || !Array.isArray(dfProg.feats)) { return; }
       dfProg.feats = dfProg.feats.filter(function (k) { return k !== arg; });
       if (dfProg.featAbilityChoice) { delete dfProg.featAbilityChoice[arg]; }
+      YARN.save(); render(); return;
+    }
+
+    if (action === "add-tool") {
+      if (!Array.isArray(char.toolProfs)) { char.toolProfs = []; }
+      var toolSlots = YARN.toolChoiceSlots(char);
+      if (char.toolProfs.length >= toolSlots) {
+        window.alert(toolSlots
+          ? "All " + toolSlots + " of this background's tool-choice slot(s) are already filled."
+          : "This background has no open tool-choice slots (its tools, if any, are already fixed).");
+        return;
+      }
+      var toolName = (window.prompt("Which specific tool/kit/set are you proficient with?") || "").trim();
+      if (!toolName) { return; }
+      if (YARN.allToolProfs(char).indexOf(toolName) !== -1) {
+        window.alert("Already have that one.");
+        return;
+      }
+      char.toolProfs.push(toolName);
+      YARN.save(); render(); return;
+    }
+    if (action === "del-tool" && arg) {
+      if (!Array.isArray(char.toolProfs)) { return; }
+      char.toolProfs = char.toolProfs.filter(function (t) { return t !== arg; });
+      YARN.save(); render(); return;
+    }
+
+    if (action === "add-language") {
+      if (!Array.isArray(char.languages)) { char.languages = []; }
+      var langSlots = YARN.languageChoiceSlots(char);
+      if (char.languages.length >= langSlots) {
+        window.alert(langSlots
+          ? "All " + langSlots + " of your background/species language-choice slot(s) are already filled."
+          : "No open language-choice slots for this background/species combo.");
+        return;
+      }
+      var langName = (window.prompt("Which language?") || "").trim();
+      if (!langName) { return; }
+      if (YARN.allLanguages(char).indexOf(langName) !== -1) {
+        window.alert("Already know that one.");
+        return;
+      }
+      char.languages.push(langName);
+      YARN.save(); render(); return;
+    }
+    if (action === "del-language" && arg) {
+      if (!Array.isArray(char.languages)) { return; }
+      char.languages = char.languages.filter(function (l) { return l !== arg; });
       YARN.save(); render(); return;
     }
 

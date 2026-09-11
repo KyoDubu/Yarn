@@ -1,21 +1,58 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-11 - Current build: **v1.12 "real feats (Origin + General + one legacy racial)"**_
+_Last updated: 2026-09-11 - Current build: **v1.13 "tool proficiency + language tracker"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.12 and pushed to
+> Tree is clean, everything committed through v1.13 and pushed to
 > `https://github.com/KyoDubu/Yarn` (main branch). Nothing in flight.
 >
 > **LIVE URL:** https://kyodubu.github.io/Yarn/ - real GitHub Pages
 > hosting, verified working end-to-end.
 >
-> **The big-picture ask, epic order:** multiclassing (v1.11, done) ->
-> **feats (v1.12, done, this entry)** -> spellbook -> subclasses ->
-> equipment catalog. D asked to tackle these in the order a person
-> actually builds a level-1 character rather than the original priority
-> order: Feats comes right after Background (which hands you an Origin
-> feat automatically) and before Equipment/Spellbook, with Subclasses
-> last since the 2024 rules push every class's subclass choice to level 3.
+> **v1.13 - closing a gap D asked about directly:** after v1.12 shipped
+> Feats, D asked point-blank whether the Background epic was fully done.
+> Answer: mostly, but tool proficiencies and bonus languages were still
+> pure display text (a background just said "Tools: One gaming set" with
+> nothing tracking which specific tool you actually picked) - same
+> unfinished-business category as species traits. D asked for the real
+> tracker, so:
+> - `BACKGROUND_INFO[bg].tools` entries follow an existing, reliable
+>   convention: a literal item ("Herbalism kit") is auto-granted with no
+>   choice, while a `"One <category>"` placeholder ("One gaming set",
+>   "One artisan's tools") means the PLAYER picks the specific one.
+>   New `YARN.backgroundToolProfs(char)` (the fixed grants) and
+>   `YARN.toolChoiceSlots(char)` (how many "One X" slots are open) split
+>   that apart with zero new data - just filtering on the existing "One "
+>   prefix every background already uses.
+> - Species languages use the same convention (a literal name like
+>   "Elvish", or an "... of choice" placeholder like "one language of
+>   choice"/"two languages of choice"). New `YARN.speciesFixedLanguages`
+>   + `YARN.languageChoiceSlots` (background's bonus-language COUNT +
+>   however many species "of choice" slots are open) split those apart
+>   the same way, with a tiny word-to-number parser for "one"/"two".
+> - New character-level fields `char.toolProfs` / `char.languages` (not
+>   per-campaign - training doesn't reset between campaigns, same as
+>   `skillProfs`/`saveProfs`) hold what the player actually picked.
+>   `YARN.allToolProfs`/`YARN.allLanguages` merge fixed + chosen into the
+>   one list the sheet renders, deduped.
+> - New sheet **Proficiencies panel**: tools and languages each show as
+>   "N/M chosen", fixed grants render with a badge (read-only), chosen
+>   ones get a remove button, and "+ Add" refuses (with an explanation,
+>   same UX as the Feats level-gate) once every open slot is filled.
+>   `backgroundPanel()`'s old raw tools/languages text now points here
+>   for specifics instead of duplicating the tracker.
+>
+> **Full test suite: 243 assertions across 7 files, all green** -
+> `test_rules.py` (72, +9: Guard's open tool slot vs. Guide's fixed tool,
+> a Human Sage's language-slot math combining species + background
+> counts) and `test_wizard_e2e.py` (49, +5: add/block/remove a tool and a
+> language through the real Proficiencies panel). Others unchanged:
+> `test_species.py` (28), `test_homebrew.py` (21), `test_wizard.py` (45),
+> `test_wizard_abilities_e2e.py` (17), `test_sync_mock.py` (11).
+>
+> **The big-picture ask, epic order:** multiclassing (v1.11) -> feats
+> (v1.12) -> **tool/language tracker (v1.13, this entry, a Background
+> loose end)** -> equipment catalog (next) -> spellbook -> subclasses.
 >
 > **v1.12 - Feats, with a real level gate D specifically asked to keep in
 > mind:** Two genuinely different rules, both modeled correctly instead
@@ -650,7 +687,7 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
 
 ---
 
-## Possible next steps (agreed priority order as of v1.12 - "flesh out
+## Possible next steps (agreed priority order as of v1.13 - "flesh out
 ## Standard mode" epic, re-ordered to match actual character-build order,
 ## each one scoped separately, do NOT batch these)
 
@@ -661,6 +698,9 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
   every attack-roll-trigger feat (Sharpshooter, Great Weapon Master,
   Charger, Shield Master...) are accurate catalog data but still
   display-only, same as documented in the v1.12 entry above.
+- ~~Tool proficiency + language tracker~~ - done, v1.13 (a Background
+  loose end, not its own epic - closes the gap between "skills" being
+  fully tracked and "tools/languages" being plain text).
 - **Equipment & gear catalog** (next up): item data (cost/weight/
   properties), real starting-equipment rules by class + background
   instead of a blank free-text inventory list.

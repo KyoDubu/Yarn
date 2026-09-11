@@ -36,6 +36,14 @@
       saveProfs: [],
       skillProfs: [],
       skillExpertise: [],
+      // Player-CHOSEN tool proficiencies and languages, on top of whatever
+      // background/species grant automatically (see YARN.allToolProfs /
+      // YARN.allLanguages in this file - they merge the fixed, automatic
+      // grants with these chosen ones). Character-level, not per-campaign,
+      // because training doesn't reset between campaigns - same reasoning
+      // as skillProfs/saveProfs living here instead of on progress.
+      toolProfs: [],
+      languages: [],
       portrait: "",
       backstory: "",
       personality: "",
@@ -139,6 +147,8 @@
       fillDefaults(c, blank);
       c.abilities = fillDefaults(c.abilities || {}, blank.abilities);
       c.backgroundAsi = fillDefaults(c.backgroundAsi || {}, blank.backgroundAsi);
+      if (!Array.isArray(c.toolProfs)) { c.toolProfs = []; }
+      if (!Array.isArray(c.languages)) { c.languages = []; }
       c.homebrew = fillDefaults(c.homebrew || {}, blank.homebrew);
       if (!Array.isArray(c.homebrew.customSkills)) { c.homebrew.customSkills = []; }
       if (!Array.isArray(c.homebrew.currencies)) { c.homebrew.currencies = []; }
@@ -466,6 +476,66 @@
   YARN.backgroundSkills = function (char) {
     var info = char ? YARN.backgroundInfo(char.background) : null;
     return info ? info.skills.slice() : [];
+  };
+
+  // ---- Tool proficiencies + languages -----------------------------------
+  // Backgrounds list tools two different ways in BACKGROUND_INFO: a literal
+  // item ("Herbalism kit", "Thieves' tools" - auto-granted, no choice) or a
+  // "One <category>" placeholder ("One artisan's tools", "One gaming set" -
+  // the PLAYER picks which specific one). That "One " prefix is the exact
+  // convention every background entry already uses, so it's a reliable,
+  // zero-new-data way to tell the two apart.
+  YARN.backgroundToolProfs = function (char) {
+    var info = char ? YARN.backgroundInfo(char.background) : null;
+    if (!info) { return []; }
+    return info.tools.filter(function (t) { return t.indexOf("One ") !== 0; });
+  };
+  YARN.toolChoiceSlots = function (char) {
+    var info = char ? YARN.backgroundInfo(char.background) : null;
+    if (!info) { return 0; }
+    return info.tools.filter(function (t) { return t.indexOf("One ") === 0; }).length;
+  };
+  // The full tool-proficiency list the sheet renders: automatic grants +
+  // whatever the player has actually picked for those "One X" slots.
+  YARN.allToolProfs = function (char) {
+    var fixed = YARN.backgroundToolProfs(char);
+    var chosen = (char && Array.isArray(char.toolProfs)) ? char.toolProfs : [];
+    var out = fixed.slice();
+    chosen.forEach(function (t) { if (out.indexOf(t) === -1) { out.push(t); } });
+    return out;
+  };
+
+  // Species languages use the same convention: a literal name ("Elvish") or
+  // an "... of choice" placeholder ("one language of choice", "two
+  // languages of choice") that the player fills in.
+  var CHOICE_WORD_COUNT = { one: 1, two: 2 };
+  function parseLanguageChoiceCount(entry) {
+    var m = /^(\w+) languages? of choice$/i.exec(entry);
+    if (!m) { return 0; }
+    return CHOICE_WORD_COUNT[m[1].toLowerCase()] || 1;
+  }
+  YARN.speciesFixedLanguages = function (char) {
+    var p = char ? YARN.speciesProfile(char) : null;
+    if (!p || !Array.isArray(p.languages)) { return []; }
+    return p.languages.filter(function (l) { return parseLanguageChoiceCount(l) === 0; });
+  };
+  YARN.languageChoiceSlots = function (char) {
+    var bgInfo = char ? YARN.backgroundInfo(char.background) : null;
+    var fromBackground = (bgInfo && Number(bgInfo.languages)) || 0;
+    var p = char ? YARN.speciesProfile(char) : null;
+    var fromSpecies = (p && Array.isArray(p.languages))
+      ? p.languages.reduce(function (sum, l) { return sum + parseLanguageChoiceCount(l); }, 0)
+      : 0;
+    return fromBackground + fromSpecies;
+  };
+  // The full language list the sheet renders: automatic species grants +
+  // whatever the player has picked for background/species "of choice" slots.
+  YARN.allLanguages = function (char) {
+    var fixed = YARN.speciesFixedLanguages(char);
+    var chosen = (char && Array.isArray(char.languages)) ? char.languages : [];
+    var out = fixed.slice();
+    chosen.forEach(function (l) { if (out.indexOf(l) === -1) { out.push(l); } });
+    return out;
   };
 
   YARN.skillTotal = function (char, prog, skillKey) {
