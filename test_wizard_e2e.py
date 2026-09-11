@@ -47,13 +47,16 @@ def main() -> int:
         page.click('[data-action="new-char"]')
         check("wizard overlay opened", page.query_selector(".wz-overlay") is not None)
 
-        # Step 1: mode -> Homebrew
+        # Step 1: concept -> custom concept for this focused end-to-end test
+        page.click('[data-wz="concept-pick:custom"]')
+        page.click('[data-wz="next"]')
+        # Step 2: mode -> Homebrew
         page.click('[data-wz="pick:mode:homebrew"]')
         page.click('[data-wz="next"]')
-        # Step 2: class -> ranger
+        # Step 3: class -> ranger
         page.click('[data-wz="pick:klass:ranger"]')
         page.click('[data-wz="next"]')
-        # Step 3: species -> elf, then its Shadar-Kai subrace (fitting, for Marei)
+        # Step 4: species -> elf, then its Shadar-Kai subrace (fitting, for Marei)
         page.click('[data-wz="pick:species:elf"]')
         check("subrace popup auto-opens for a species with subraces", page.query_selector(".wz-submodal") is not None)
         next_btn = page.query_selector('[data-wz="next"]')
@@ -67,7 +70,7 @@ def main() -> int:
         page.click('[data-wz="close-subrace"]')
         check("Done button closes the popup", page.query_selector(".wz-submodal") is None)
         page.click('[data-wz="next"]')
-        # Step 4: background -> Outlander, then spend its 2024 ASI (str+2, wis+1)
+        # Step 5: background -> Outlander, then spend its 2024 ASI (str+2, wis+1)
         page.click('[data-wz="pick:background:Outlander"]')
         next_btn = page.query_selector('[data-wz="next"]')
         check("Next disabled before spending the background's ability points",

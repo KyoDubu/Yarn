@@ -27,6 +27,8 @@ def main() -> int:
 
     def open_wizard_to_abilities(page):
         page.click('[data-action="new-char"]')
+        page.click('[data-wz="concept-pick:custom"]')
+        page.click('[data-wz="next"]')
         page.click('[data-wz="pick:mode:standard"]')
         page.click('[data-wz="next"]')
         page.click('[data-wz="pick:klass:fighter"]')

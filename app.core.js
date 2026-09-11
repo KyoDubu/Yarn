@@ -21,6 +21,12 @@
     return {
       id: YARN.uid("char"),
       name: "",
+      concept: {
+        fantasy: "",
+        role: "",
+        theme: "",
+        description: ""
+      },
       species: "human",
       subspecies: "",
       klass: "fighter",
@@ -147,6 +153,7 @@
       fillDefaults(c, blank);
       c.abilities = fillDefaults(c.abilities || {}, blank.abilities);
       c.backgroundAsi = fillDefaults(c.backgroundAsi || {}, blank.backgroundAsi);
+      c.concept = fillDefaults(c.concept || {}, blank.concept);
       if (!Array.isArray(c.toolProfs)) { c.toolProfs = []; }
       if (!Array.isArray(c.languages)) { c.languages = []; }
       c.homebrew = fillDefaults(c.homebrew || {}, blank.homebrew);

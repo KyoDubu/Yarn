@@ -99,7 +99,7 @@ def main() -> int:
                 YARN.state = YARN.normalize({characters: [], campaigns: []});
                 YARN.Wizard.open({ onCreate: (c) => { window.MADE = c; } });
                 const S = YARN.Wizard._debug.state();
-                S.step = 4;              // the abilities step
+                S.step = 5;              // the abilities step
                 S.method = 'standard';
                 S.klass = 'wizard';
                 S.species = 'elf';       // +2 DEX
@@ -171,7 +171,7 @@ def main() -> int:
                 YARN.state = YARN.normalize({characters: [], campaigns: []});
                 YARN.Wizard.open({ onCreate: () => {} });
                 const S = YARN.Wizard._debug.state();
-                S.step = 3;              // the background step
+                S.step = 4;              // the background step
                 S.background = 'Sage';
             }"""
         )

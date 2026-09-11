@@ -13,9 +13,10 @@
   "use strict";
 
   var W = YARN.Wizard = {};
-  var STEPS = ["mode", "class", "species", "background", "abilities", "details", "review"];
+  var STEPS = ["concept", "mode", "class", "species", "background", "abilities", "details", "review"];
   var STEP_TITLES = {
-    mode: "Standard or Homebrew?",
+    concept: "Character Concept",
+    mode: "Rules Starting Point",
     class: "Choose a Class",
     species: "Choose a Species",
     background: "Choose a Background",
@@ -48,6 +49,7 @@
     YARN.ABILITY_KEYS.forEach(function (k) { assign[k] = null; direct[k] = 8; bgAsi[k] = 0; });
     return {
       step: 0,
+      concept: { fantasy: "", role: "", theme: "", description: "" },
       mode: "standard",
       klass: "fighter",
       species: "human",
@@ -105,6 +107,25 @@
         (hintKey && it[hintKey] ? '<span class="wz-card-hint">' + esc(it[hintKey]) + "</span>" : "") +
         "</button>";
     }).join("");
+  }
+
+  function stepConcept() {
+    var concepts = [
+      { key: "guardian", name: "Armored guardian", hint: "Protect allies and hold the front line", role: "front line", theme: "protective" },
+      { key: "infiltrator", name: "Clever infiltrator", hint: "Sneak, scout, and strike at the right moment", role: "skirmisher", theme: "cunning" },
+      { key: "scholar", name: "Arcane scholar", hint: "Solve problems with knowledge and strange magic", role: "spellcaster", theme: "curious" },
+      { key: "wanderer", name: "Wilds wanderer", hint: "Explore, track, and survive anywhere", role: "explorer", theme: "restless" },
+      { key: "custom", name: "I have my own idea", hint: "Describe the character in your own words", role: "", theme: "" }
+    ];
+    return '<p class="wz-lead">What kind of character do you want to play? Pick a starting idea, or describe your own. This guides recommendations without locking you into a class.</p>' +
+      '<div class="wz-cards wz-cards-grid">' + concepts.map(function (it) {
+        var on = S.concept.fantasy === it.key;
+        return '<button class="wz-card' + (on ? " sel" : "") + '" data-wz="concept-pick:' + it.key + '" aria-pressed="' + on + '">' +
+          '<span class="wz-card-title">' + esc(it.name) + '</span><span class="wz-card-hint">' + esc(it.hint) + '</span></button>';
+      }).join("") + '</div>' +
+      '<div class="wz-field"><label for="wzConcept">Concept, personality, or theme (optional)</label>' +
+        '<textarea id="wzConcept" data-wz="concept-description" rows="3" placeholder="A cheerful former guard who wants to protect travelers...">' +
+          esc(S.concept.description) + '</textarea></div>';
   }
 
   function stepMode() {
@@ -387,13 +408,16 @@
   }
 
   var RENDERERS = {
-    mode: stepMode, class: stepClass, species: stepSpecies, background: stepBackground,
+    concept: stepConcept, mode: stepMode, class: stepClass, species: stepSpecies, background: stepBackground,
     abilities: stepAbilities, details: stepDetails, review: stepReview
   };
 
   // ---- validation ------------------------------------------------------
   function canAdvance() {
     var name = STEPS[S.step];
+    if (name === "concept") {
+      return !!(S.concept.fantasy || S.concept.description.trim());
+    }
     if (name === "species") {
       var sp = YARN.speciesInfo(S.species);
       if (sp && Array.isArray(sp.subraces) && sp.subraces.length) { return !!S.subspecies; }
@@ -415,6 +439,7 @@
   function buildCharacter() {
     var c = YARN.blankCharacter();
     c.name = S.name || YARN.randomName();
+    c.concept = Object.assign({}, c.concept, S.concept);
     c.klass = S.klass;
     c.species = S.species;
     c.subspecies = S.subspecies;
@@ -526,6 +551,21 @@
       case "back": if (S.step > 0) { stopRollAnimation(); S.step--; render(); } return;
       case "next": if (canAdvance() && S.step < STEPS.length - 1) { stopRollAnimation(); S.step++; render(); } return;
       case "create": commit(); return;
+
+      case "concept-pick": {
+        var concepts = {
+          guardian: { role: "front line", theme: "protective" },
+          infiltrator: { role: "skirmisher", theme: "cunning" },
+          scholar: { role: "spellcaster", theme: "curious" },
+          wanderer: { role: "explorer", theme: "restless" },
+          custom: { role: "", theme: "" }
+        };
+        S.concept.fantasy = args[0];
+        S.concept.role = concepts[args[0]].role;
+        S.concept.theme = concepts[args[0]].theme;
+        render(); return;
+      }
+      case "concept-description": S.concept.description = el.value; return;
 
       case "pick":
         S[args[0]] = args[1];
