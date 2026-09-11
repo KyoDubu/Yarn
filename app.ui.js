@@ -370,18 +370,47 @@
       ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Languages: " + info.languages + " of your choice</p>"
       : "";
     // 2014-style backgrounds carry `feature` (a roleplay perk); the 2024
-    // additions carry `originFeat` instead (a granted feat, not simulated -
-    // see the doc comment on YARN.BACKGROUND_INFO). Exactly one is present.
+    // additions carry `originFeat` instead (a granted feat - see
+    // featsPanel() below for the ones Yarn actually computes vs. displays
+    // manually). Exactly one of feature/originFeat is present.
+    var originFeat = info.originFeatKey ? YARN.featInfo(info.originFeatKey) : null;
     var perk = info.feature
       ? '<p class="muted" style="font-size:.7rem;margin:.3rem 0">Feature: <b>' + esc(info.feature) + "</b> (roleplay/DM adjudicated)</p>"
       : (info.originFeat
-          ? '<p class="muted" style="font-size:.7rem;margin:.3rem 0">Origin feat: <b>' + esc(info.originFeat) +
-            "</b> (2024 rules - feat mechanics aren't simulated yet, track its effects manually)</p>"
+          ? '<p class="muted" style="font-size:.7rem;margin:.3rem 0">Origin feat: <b>' + esc(info.originFeat) + "</b>" +
+            (originFeat && originFeat.mechanic ? ' <span class="badge">on the sheet</span>' : ' <span class="badge">manual</span>') +
+            (originFeat ? "<br>" + esc(originFeat.blurb) : "") + "</p>"
           : "");
     return '<div class="panel"><h2>Background</h2>' +
       '<p class="muted" style="font-size:.7rem;margin:.1rem 0 .3rem">Skills granted: ' +
         skillNames.map(esc).join(", ") + "</p>" +
       tools + langs + perk +
+      "</div>";
+  }
+
+  // ---- render: general/racial feats (level 4+, chosen instead of an ASI) --
+  function featsPanel(char, prog) {
+    var available = YARN.asiSlotsAvailable(char, prog);
+    var chosen = Array.isArray(prog.feats) ? prog.feats : [];
+    var rows = chosen.map(function (key) {
+      var feat = YARN.featInfo(key);
+      if (!feat) { return ""; }
+      var ability = prog.featAbilityChoice && prog.featAbilityChoice[key];
+      var abilityNote = ability ? ' <span class="badge">+1 ' + esc(ability.toUpperCase()) +
+        (feat.grantsSaveProf ? " save" : "") + "</span>" : "";
+      var computedNote = feat.mechanic ? ' <span class="badge">on the sheet</span>' : ' <span class="badge">manual</span>';
+      return '<li><span class="grow"><b>' + esc(feat.name) + "</b>" + abilityNote + computedNote +
+        '<br><span class="muted" style="font-size:.65rem">' + esc(feat.blurb) + "</span></span>" +
+        '<button class="danger" data-action="del-feat:' + key + '" title="Remove">\u00d7</button></li>';
+    }).join("");
+    return '<div class="panel"><h2>Feats</h2>' +
+      '<p class="muted" style="font-size:.65rem;margin:.1rem 0 .5rem">' +
+      "General and racial feats are taken INSTEAD of an Ability Score Improvement, only at level " +
+      "4, 8, 12, 16, or 19 (your Origin feat from Background is automatic and doesn't count against this). " +
+      "ASI/feat slots reached so far: <b>" + available + "</b> (Yarn simplifies this to total character " +
+      "level rather than tracking it per class).</p>" +
+      (rows ? '<ul class="linelist">' + rows + "</ul>" : '<p class="muted">No general feats yet.</p>') +
+      '<button class="ghost" data-action="add-feat" style="margin-top:.4rem">+ Add feat</button>' +
       "</div>";
   }
 
@@ -425,7 +454,7 @@
         identityPanel(char, prog) +
         '<div>' + abilitiesPanel(char) + traitsPanel(char) + "</div>" +
         '<div>' + combatPanel(char, prog) + savesPanel(char) + currencyPanel(char, prog) + "</div>" +
-        '<div>' + skillsPanel(char) + backgroundPanel(char) + resourcesPanel(char, prog) + "</div>" +
+        '<div>' + skillsPanel(char) + backgroundPanel(char) + featsPanel(char, prog) + resourcesPanel(char, prog) + "</div>" +
         "</div>";
     }
 
@@ -583,6 +612,52 @@
       if (!rmProg) { return; }
       rmProg.level = YARN.totalLevel(char, rmProg); // preserve the total, drop the breakdown
       rmProg.classLevels = {};
+      YARN.save(); render(); return;
+    }
+
+    if (action === "add-feat") {
+      var fProg = activeProg();
+      if (!fProg) { return; }
+      if (!Array.isArray(fProg.feats)) { fProg.feats = []; }
+      var availSlots = YARN.asiSlotsAvailable(char, fProg);
+      if (availSlots <= fProg.feats.length) {
+        var nextLevel = YARN.ASI_LEVELS[fProg.feats.length];
+        window.alert(nextLevel
+          ? "No ASI/feat slot available yet - the next one opens at character level " + nextLevel + "."
+          : "Every ASI/feat slot (level 4/8/12/16/19) is already spent.");
+        return;
+      }
+      var options = YARN.FEATS.filter(function (f) {
+        return f.category !== "origin" && fProg.feats.indexOf(f.key) === -1;
+      });
+      var featHint = options.map(function (f) { return f.key; }).join(", ");
+      var featPick = (window.prompt("Take which feat? (" + featHint + ")") || "").toLowerCase().trim();
+      var feat = YARN.featInfo(featPick);
+      if (!feat || feat.category === "origin" || fProg.feats.indexOf(featPick) !== -1) {
+        window.alert("Not a valid (or already-taken) feat key.");
+        return;
+      }
+      if (feat.category === "racial" && feat.prereqText) {
+        if (!window.confirm(feat.name + " requires: " + feat.prereqText + ". Does this character qualify?")) { return; }
+      }
+      if (feat.abilityChoices && feat.abilityChoices.length) {
+        var abilityHint = feat.abilityChoices.join(", ");
+        var abilityPick = (window.prompt("Which ability gets the +1? (" + abilityHint + ")") || "").toLowerCase().trim();
+        if (feat.abilityChoices.indexOf(abilityPick) === -1) {
+          window.alert("Not one of this feat's ability choices: " + abilityHint);
+          return;
+        }
+        if (!fProg.featAbilityChoice || typeof fProg.featAbilityChoice !== "object") { fProg.featAbilityChoice = {}; }
+        fProg.featAbilityChoice[featPick] = abilityPick;
+      }
+      fProg.feats.push(featPick);
+      YARN.save(); render(); return;
+    }
+    if (action === "del-feat" && arg) {
+      var dfProg = activeProg();
+      if (!dfProg || !Array.isArray(dfProg.feats)) { return; }
+      dfProg.feats = dfProg.feats.filter(function (k) { return k !== arg; });
+      if (dfProg.featAbilityChoice) { delete dfProg.featAbilityChoice[arg]; }
       YARN.save(); render(); return;
     }
 

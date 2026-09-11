@@ -339,6 +339,113 @@ def main() -> int:
             if not ok:
                 failures.append(label)
 
+        # ---- feats: origin (free, level 1, from Background) vs general
+        # (chosen instead of an ASI, level 4/8/12/16/19 only) --------------
+        print("\n  -- feats: Origin feat (Tough) auto-granted by Background, no level gate --")
+        tough_case = page.evaluate(
+            """() => {
+                const full = YARN.normalize({ characters: [{
+                    id: 'ft1', name: 'Sodbuster', klass: 'fighter', species: 'human',
+                    background: 'Farmer',
+                    abilities: { str:10,dex:10,con:14,int:10,wis:10,cha:10 }
+                }] });
+                const ch = full.characters[0];
+                const prog = { level: 1, classLevels: {} };
+                return {
+                    originFeatKey: YARN.originFeatKey(ch),
+                    hpWithFeat: YARN.suggestedHpMax(ch, prog),
+                    neverTouchedProgFeats: prog.feats === undefined
+                };
+            }"""
+        )
+        tough_cases = [
+            ("Farmer's originFeatKey resolves to 'tough'", tough_case["originFeatKey"], "tough"),
+            ("HP = 10 (d10) + 2 (CON) + 2 (Tough, x1 level) = 14, at level 1, no ASI gate needed",
+             tough_case["hpWithFeat"], 14),
+            ("origin feat never touches prog.feats - it's free, not a chosen slot",
+             tough_case["neverTouchedProgFeats"], True),
+        ]
+        for label, actual, expected in tough_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
+        print("\n  -- feats: General feat (Resilient) chosen at level 4, grants +1 CON and a CON save --")
+        resilient_case = page.evaluate(
+            """() => {
+                const full = YARN.normalize({ characters: [{
+                    id: 'ft2', name: 'Grit', klass: 'wizard', species: 'human',
+                    background: 'Sage',
+                    abilities: { str:10,dex:10,con:10,int:14,wis:10,cha:10 }
+                }] });
+                const ch = full.characters[0];
+                const progNoFeat = { level: 4, classLevels: {}, feats: [], featAbilityChoice: {} };
+                const progWithFeat = { level: 4, classLevels: {}, feats: ['resilient'], featAbilityChoice: { resilient: 'con' } };
+                return {
+                    conBefore: YARN.abilityScore(ch, progNoFeat, 'con'),
+                    conAfter: YARN.abilityScore(ch, progWithFeat, 'con'),
+                    saveBefore: YARN.saveTotal(ch, progNoFeat, 'con'),
+                    saveAfter: YARN.saveTotal(ch, progWithFeat, 'con')
+                };
+            }"""
+        )
+        resilient_cases = [
+            ("CON is 10 before taking Resilient", resilient_case["conBefore"], 10),
+            ("CON is 11 after Resilient (+1, ability choice = con)", resilient_case["conAfter"], 11),
+            ("CON save is +0 before Resilient (Wizard isn't con-proficient)", resilient_case["saveBefore"], 0),
+            ("CON save is +2 after Resilient (mod 0 -> +1 score bump is 0 rounded, + pb 2 from new proficiency)",
+             resilient_case["saveAfter"], 2),
+        ]
+        for label, actual, expected in resilient_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
+        print("\n  -- feats: Alert (origin, via Guard background) adds proficiency bonus to initiative --")
+        alert_case = page.evaluate(
+            """() => {
+                const full = YARN.normalize({ characters: [{
+                    id: 'ft3', name: 'Watchful', klass: 'fighter', species: 'human',
+                    background: 'Guard',
+                    abilities: { str:10,dex:14,con:10,int:10,wis:10,cha:10 }
+                }] });
+                const ch = full.characters[0];
+                const prog = { level: 4, classLevels: {} };
+                return { initiative: YARN.initiative(ch, prog) };
+            }"""
+        )
+        alert_cases = [
+            ("initiative = +2 (DEX mod) + 2 (prof bonus at level 4, from Alert) = 4", alert_case["initiative"], 4),
+        ]
+        for label, actual, expected in alert_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
+        print("\n  -- feats: ASI/feat slots are level-gated to 4/8/12/16/19 --")
+        slots_case = page.evaluate(
+            """() => {
+                const ch = { klass: 'fighter', background: 'Soldier' };
+                return [1, 3, 4, 7, 8, 19, 20].map(lvl =>
+                    YARN.asiSlotsAvailable(ch, { level: lvl, classLevels: {} }));
+            }"""
+        )
+        slots_cases = [
+            ("asiSlotsAvailable at levels [1,3,4,7,8,19,20]", slots_case, [0, 0, 1, 1, 2, 5, 5]),
+        ]
+        for label, actual, expected in slots_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
         browser.close()
 
     print("")

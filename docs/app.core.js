@@ -91,6 +91,14 @@
       resourcesUsed: {},   // homebrew meters: key -> { current, max }
       spellSlotsUsed: {},
       asi: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
+      // General/racial feats CHOSEN during play (level 4/8/12/16/19 ASI
+      // trade-ins) - never includes the character's origin feat, which is
+      // automatic from the Background and needs no slot (see
+      // YARN.originFeatKey/YARN.allFeatKeys in this file). featAbilityChoice
+      // is only consulted for feats whose catalog entry has abilityChoices,
+      // e.g. {resilient: "con"} for "picked CON when I took Resilient".
+      feats: [],
+      featAbilityChoice: {},
       notes: "",
       sessions: []
     };
@@ -163,6 +171,8 @@
         if (!bucket[cid].currencyExtra || typeof bucket[cid].currencyExtra !== "object") { bucket[cid].currencyExtra = {}; }
         if (!bucket[cid].resourcesUsed || typeof bucket[cid].resourcesUsed !== "object") { bucket[cid].resourcesUsed = {}; }
         if (!bucket[cid].classLevels || typeof bucket[cid].classLevels !== "object") { bucket[cid].classLevels = {}; }
+        if (!Array.isArray(bucket[cid].feats)) { bucket[cid].feats = []; }
+        if (!bucket[cid].featAbilityChoice || typeof bucket[cid].featAbilityChoice !== "object") { bucket[cid].featAbilityChoice = {}; }
       });
     });
 
@@ -239,16 +249,87 @@
     return 2 + Math.floor((lvl - 1) / 4);
   };
 
+  // ---- Feats --------------------------------------------------------
+  // The feat automatically granted by a character's Background (2024
+  // backgrounds only - the original 13 2014-style ones grant a `feature`
+  // instead and have no originFeatKey). Free, no level gate, never lives
+  // in prog.feats.
+  YARN.originFeatKey = function (char) {
+    var info = char ? YARN.backgroundInfo(char.background) : null;
+    return (info && info.originFeatKey) || null;
+  };
+
+  // Every feat this character currently has IN THIS CAMPAIGN: the (at
+  // most one) origin feat, plus whatever general/racial feats were
+  // chosen during play. This is the one list every feat-driven calc
+  // below reads from.
+  YARN.allFeatKeys = function (char, prog) {
+    var keys = [];
+    var origin = YARN.originFeatKey(char);
+    if (origin) { keys.push(origin); }
+    (prog && Array.isArray(prog.feats) ? prog.feats : []).forEach(function (k) {
+      if (keys.indexOf(k) === -1) { keys.push(k); }
+    });
+    return keys;
+  };
+
+  // ASI-or-feat decision points reached so far: one per YARN.ASI_LEVELS
+  // entry the character's total level has reached. Real 5e actually ties
+  // this to each CLASS's own level (multiclassing can offer more slots
+  // than a same-level single-classed character), but Yarn simplifies to
+  // total level here, same spirit as the multiclass spellcasting
+  // simplification from v1.11 - the Feats panel says so on the sheet.
+  YARN.asiSlotsAvailable = function (char, prog) {
+    var level = YARN.totalLevel(char, prog);
+    return YARN.ASI_LEVELS.filter(function (l) { return level >= l; }).length;
+  };
+
+  // Sum of +1s from every feat that grants an ability bonus to THIS key
+  // (Resilient, Actor, Elven Accuracy...). A character can stack several
+  // different ability-bonus feats - each contributes independently, that
+  // really is how 5e works.
+  YARN.featAbilityBonus = function (char, prog, key) {
+    var choices = (prog && prog.featAbilityChoice) || {};
+    return YARN.allFeatKeys(char, prog).reduce(function (sum, fk) {
+      var feat = YARN.featInfo(fk);
+      if (feat && feat.mechanic === "abilityBonus" && choices[fk] === key) { return sum + 1; }
+      return sum;
+    }, 0);
+  };
+
+  // Resilient is the only feat that also grants a save proficiency - it's
+  // tied to whichever ability you picked for its +1.
+  YARN.featGrantsSaveProf = function (char, prog, key) {
+    var choices = (prog && prog.featAbilityChoice) || {};
+    return YARN.allFeatKeys(char, prog).some(function (fk) {
+      var feat = YARN.featInfo(fk);
+      return !!(feat && feat.grantsSaveProf && choices[fk] === key);
+    });
+  };
+
+  // Tough's flat "+2 HP per level, retroactively" - the only feat with a
+  // pure-math effect on hit points.
+  YARN.featFlatHpBonus = function (char, prog) {
+    var level = YARN.totalLevel(char, prog);
+    return YARN.allFeatKeys(char, prog).reduce(function (sum, fk) {
+      var feat = YARN.featInfo(fk);
+      if (feat && feat.mechanic === "flatHpPerLevel") { return sum + feat.mechanicValue * level; }
+      return sum;
+    }, 0);
+  };
+
   // Base score + background ASI (2024 rules - species grants no ability
-  // bonus at all, see DEVLOG v1.9) + campaign-earned ASI. A character can
-  // have different final scores in different campaigns, which is correct:
+  // bonus at all, see DEVLOG v1.9) + campaign-earned ASI + feat ability
+  // bonuses (Resilient, Actor, Elven Accuracy...). A character can have
+  // different final scores in different campaigns, which is correct:
   // they levelled up separately.
   YARN.abilityScore = function (char, prog, key) {
     if (!char) { return 10; }
     var base = Number(char.abilities[key]) || 10;
     var backgroundBonus = (char.backgroundAsi && char.backgroundAsi[key]) || 0;
     var earned = (prog && prog.asi && prog.asi[key]) || 0;
-    return base + backgroundBonus + earned;
+    var featBonus = YARN.featAbilityBonus(char, prog, key);
+    return base + backgroundBonus + earned + featBonus;
   };
 
   // 2024 background ASI math. A background offers exactly 3 candidate
@@ -372,7 +453,8 @@
     var total = YARN.abilityMod(char, prog, key);
     var cls = YARN.classInfo(char.klass);
     var proficient = (cls && cls.saves.indexOf(key) !== -1) ||
-                     char.saveProfs.indexOf(key) !== -1;
+                     char.saveProfs.indexOf(key) !== -1 ||
+                     YARN.featGrantsSaveProf(char, prog, key);
     if (proficient) { total += YARN.profBonus(YARN.totalLevel(char, prog)); }
     return total;
   };
@@ -423,7 +505,12 @@
   };
 
   YARN.initiative = function (char, prog) {
-    return YARN.abilityMod(char, prog, "dex");
+    var base = YARN.abilityMod(char, prog, "dex");
+    // Alert (2024 wording): bonus to initiative equal to proficiency bonus.
+    if (YARN.allFeatKeys(char, prog).indexOf("alert") !== -1) {
+      base += YARN.profBonus(YARN.totalLevel(char, prog));
+    }
+    return base;
   };
 
   // Armor table lives here rather than app.rules.js because AC is computed,
@@ -483,7 +570,7 @@
         else { total += Math.floor(entry.cls.hitDie / 2) + 1 + con; }
       }
     });
-    return total;
+    return total + YARN.featFlatHpBonus(char, prog);
   };
 
   // Hit dice pool grouped by die size, e.g. {10: 3, 6: 2} for a Fighter
@@ -552,6 +639,9 @@
       totalLevel: totalLevel,
       classBreakdown: YARN.classBreakdown(char, prog),
       hitDicePool: YARN.hitDicePool(char, prog),
+      feats: YARN.allFeatKeys(char, prog),
+      originFeatKey: YARN.originFeatKey(char),
+      asiSlotsAvailable: YARN.asiSlotsAvailable(char, prog),
       ac: YARN.ac(char, prog),
       initiative: YARN.initiative(char, prog),
       passivePerception: YARN.passivePerception(char, prog),

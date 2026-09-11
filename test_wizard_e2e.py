@@ -27,6 +27,17 @@ def main() -> int:
     with sync_playwright() as pw:
         browser = pw.chromium.launch(channel="msedge")
         page = browser.new_page()
+
+        # One persistent FIFO dialog handler for the whole test, rather than
+        # a fresh listener per action. Playwright doesn't route dialogs to
+        # "the next once() in line" - EVERY currently-registered listener
+        # gets called for EACH dialog, so two pre-registered once() handlers
+        # both fire on the very first dialog and the second crashes trying
+        # to accept an already-handled one. A single shared queue, popped
+        # FIFO as dialogs actually occur, is the correct way to answer a
+        # sequence of window.prompt()/confirm() calls.
+        dialog_answers = []
+        page.on("dialog", lambda d: d.accept(dialog_answers.pop(0) if dialog_answers else ""))
         # start from a clean slate so the roster is empty
         page.goto(URL)
         page.evaluate("() => { localStorage.clear(); }")
@@ -210,8 +221,7 @@ def main() -> int:
 
         # "+ Multiclass" triggers two real window.prompt() dialogs (which
         # class, how many levels) - answer them the way a player would.
-        answers = iter(["wizard", "2"])
-        page.on("dialog", lambda d: d.accept(next(answers, "")))
+        dialog_answers.extend(["wizard", "2"])
         page.click('[data-action="add-class"]')
 
         multi_text = page.inner_text(".wrap")
@@ -229,6 +239,30 @@ def main() -> int:
         check("reverting drops back to the plain single-class Level field", "+ Multiclass" in reverted_text)
         level_after_revert = page.eval_on_selector('input[data-model="prog.level"]', "el => el.value")
         check("reverting preserves the total (5) rather than losing it", level_after_revert == "5")
+
+        print("\n  -- sheet's Feats panel: real general feat, driven through the UI --")
+        # Character is level 5 here (from the multiclass section above), well
+        # past the level-4 ASI gate. Tough is deliberately NOT pickable here -
+        # it's an Origin feat (only auto-granted by Background), so use a
+        # real General feat instead: Resilient, which needs a second dialog
+        # for its ability choice.
+        con_before = page.inner_text('[data-out="score.con"]')
+        dialog_answers.extend(["resilient", "con"])
+        page.click('[data-action="add-feat"]')
+
+        feats_text = page.inner_text(".wrap")
+        check("Feats panel now lists Resilient", "Resilient" in feats_text)
+        con_after = page.inner_text('[data-out="score.con"]')
+        check("Resilient(CON) bumps the CON score tile by +1", int(con_after) - int(con_before) == 1)
+        # Save-proficiency stacking from Resilient is precisely covered at
+        # the math level in test_rules.py (Wizard, not already CON-proficient);
+        # this e2e character is a Fighter, whose class already grants a CON
+        # save, so asserting a visible save-tile CHANGE here would be
+        # asserting the wrong thing for this particular character.
+
+        page.click('[data-action="del-feat:resilient"]')
+        con_removed = page.inner_text('[data-out="score.con"]')
+        check("removing the feat drops the CON score back down", con_removed == con_before)
 
         browser.close()
 

@@ -1,22 +1,108 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-11 - Current build: **v1.11 "real multiclassing (RAW hit dice, saves, and spell slots)"**_
+_Last updated: 2026-09-11 - Current build: **v1.12 "real feats (Origin + General + one legacy racial)"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.11 and pushed to
+> Tree is clean, everything committed through v1.12 and pushed to
 > `https://github.com/KyoDubu/Yarn` (main branch). Nothing in flight.
 >
 > **LIVE URL:** https://kyodubu.github.io/Yarn/ - real GitHub Pages
 > hosting, verified working end-to-end.
 >
-> **The big-picture ask behind v1.10 and v1.11:** D wants Yarn's Standard
-> mode built out to be genuinely comprehensive - both 2014 and 2024
-> vernacular/rules available side by side for a table of 5-10 players,
-> with Homebrew staying scoped to what it's always meant (custom
-> skills/currencies/resource meters), not "which edition". The identified
-> gap list, in priority order the group picked: **multiclassing (done,
-> this entry) -> feats -> spellbook -> subclasses -> equipment catalog.**
-> Each is its own scoped epic; don't try to do them all at once.
+> **The big-picture ask, epic order:** multiclassing (v1.11, done) ->
+> **feats (v1.12, done, this entry)** -> spellbook -> subclasses ->
+> equipment catalog. D asked to tackle these in the order a person
+> actually builds a level-1 character rather than the original priority
+> order: Feats comes right after Background (which hands you an Origin
+> feat automatically) and before Equipment/Spellbook, with Subclasses
+> last since the 2024 rules push every class's subclass choice to level 3.
+>
+> **v1.12 - Feats, with a real level gate D specifically asked to keep in
+> mind:** Two genuinely different rules, both modeled correctly instead
+> of flattened into one:
+> - **Origin feats** (Alert, Crafter, Healer, Lucky, Magic Initiate,
+>   Musician, Savage Attacker, Skilled, Tavern Brawler, Tough) are FREE,
+>   granted automatically at level 1 by a 2024-style Background - no
+>   choice, no level gate, never occupy a slot. New `originFeatKey` field
+>   added to the 7 backgrounds that already carried a display-only
+>   `originFeat` string (Artisan/Farmer/Guard/Guide/Merchant/Scribe/
+>   Wayfarer) - the existing string stays for display, the new key is
+>   what the math actually reads. `YARN.originFeatKey(char)` resolves it.
+> - **General feats** (Actor, Athlete, Charger, Durable, Great Weapon
+>   Master, Heavily/Lightly/Moderately Armored, Keen Mind, Mobile,
+>   Observant, Resilient, Sharpshooter, Shield Master, Weapon Master) are
+>   CHOSEN instead of an Ability Score Improvement, and only at levels 4,
+>   8, 12, 16, or 19 - `YARN.asiSlotsAvailable(char, prog)` counts how
+>   many of those thresholds the character's total level has reached, and
+>   the sheet's new "+ Add feat" button refuses (with an explanation) to
+>   add a feat past that count. Chosen feats live in a new per-campaign
+>   `prog.feats` array (never the origin feat - that one's free and lives
+>   nowhere but the background lookup).
+> - Also added **Elven Accuracy** as a third category, `"racial"` -
+>   the legacy 2014 Xanathar's Guide feat from the conversation that
+>   kicked this whole epic off. Never reprinted for 2024, so it's kept
+>   distinct from `"general"` and carries a `prereqText` ("Elf or
+>   Half-Elf") that the sheet asks the player to self-confirm via a
+>   `window.confirm` before adding it - Yarn has no hard species-lock
+>   anywhere else either, so this matches the app's existing "trust the
+>   table" philosophy rather than inventing new validation machinery.
+>
+> **Real math, not just labels - three feats actually compute something:**
+> `mechanic: "flatHpPerLevel"` (Tough: +2 x total level, folded into
+> `suggestedHpMax`), `mechanic: "abilityBonus"` (Resilient, Actor,
+> Athlete, Durable, Elven Accuracy, etc.: +1 to a chosen ability, folded
+> into `abilityScore` via new `YARN.featAbilityBonus`), and Alert's
+> initiative bonus (real 2024 wording: +proficiency bonus, not the 2014
+> flat +5 - special-cased directly in `YARN.initiative` since it's the
+> only feat that needs that exact formula). Resilient additionally sets
+> `grantsSaveProf: true`, which `YARN.featGrantsSaveProf` folds into
+> `saveTotal` for whichever ability was picked. Everything else
+> (Sharpshooter's -5/+10, Great Weapon Master's bonus attack, Lucky's
+> luck-point pool, Magic Initiate's actual spells...) is real, accurate
+> catalog data with `mechanic: null` - same honest "display only for now"
+> treatment Origin feats already got in v1.10, because simulating a
+> combat-trigger or resource-pool feat needs systems Yarn doesn't have
+> yet (a real attack-roll flow, a resource tracker hook, a spell list -
+> the last of which is literally the next epic).
+>
+> New `YARN.allFeatKeys(char, prog)` in `app.core.js` is the single list
+> every feat-driven calc reads from (origin feat + chosen general/racial
+> feats, deduped). New sheet **Feats panel**: shows the level-gate math
+> plainly ("ASI/feat slots reached so far: N"), lists chosen feats with a
+> "computed" or "manual" badge so it's obvious at a glance which ones
+> actually move a number, and a remove button per feat. Background panel
+> also upgraded to show the origin feat's real blurb + the same badge,
+> not just a bare name.
+>
+> **Known, deliberate simplification** (documented in the Feats panel
+> copy itself): `asiSlotsAvailable` counts ASI thresholds against TOTAL
+> character level, not per-class - real 5e can grant more slots than that
+> to a multiclassed character (each class has its own ASI progression).
+> Same simplification spirit as multiclass spellcasting from v1.11;
+> revisit if/when a proper Level-up wizard gets built (it's on the
+> roadmap below) since that's the natural place to track "which ASI slot
+> came from which class level" precisely.
+>
+> **Full test suite: 229 assertions across 7 files, all green** -
+> `test_rules.py` (63, +9 new feat-math cases: Tough's HP via an
+> auto-granted origin feat, Resilient's ability+save stacking, Alert's
+> proficiency-bonus initiative, and the exact level-gate table for all 7
+> character levels that matter), `test_wizard_e2e.py` (44, +3 new,
+> driving the real Feats panel through Playwright: add Resilient with its
+> ability-choice prompt, watch the CON score tile move, remove it, watch
+> it move back), `test_species.py` (28), `test_homebrew.py` (21),
+> `test_wizard.py` (45), `test_wizard_abilities_e2e.py` (17),
+> `test_sync_mock.py` (11). Re-run any of them with
+> `.venv\Scripts\python -u <file>.py`.
+>
+> Along the way, fixed a latent multi-dialog bug in `test_wizard_e2e.py`
+> itself: stacking two `page.once("dialog", ...)` handlers before a click
+> doesn't queue them one-per-dialog like you'd expect - Playwright calls
+> every currently-registered listener for EACH dialog, so both fired on
+> the first one and the second crashed trying to accept an already-
+> handled dialog. Replaced with one persistent FIFO queue
+> (`dialog_answers`, popped in order as dialogs actually occur) shared
+> for the whole test file.
 >
 > **v1.11 - multiclassing, done with real RAW math, not just a free-text
 > field:** Added `prog.classLevels` - a per-CAMPAIGN breakdown like
@@ -564,23 +650,33 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
 
 ---
 
-## Possible next steps (agreed priority order as of v1.11 - "flesh out
-## Standard mode" epic, each one scoped separately, do NOT batch these)
+## Possible next steps (agreed priority order as of v1.12 - "flesh out
+## Standard mode" epic, re-ordered to match actual character-build order,
+## each one scoped separately, do NOT batch these)
 
-- **Feats** (next up): Origin/General 2024 feats + legacy 2014 feats like
-  Elven Accuracy. Real mechanics, not just a label - start with the easy
-  flat-math ones (Tough's +2 HP/level) before the ones needing new UI
-  (Skilled's proficiency picker) or new data (Magic Initiate's spells).
+- ~~Multiclassing~~ - done, v1.11.
+- ~~Feats~~ - done, v1.12 (Origin + General + Elven Accuracy as a legacy
+  racial example). Only the flat-math and ability-bonus feats compute a
+  real number so far - Lucky's luck points, Magic Initiate's spells, and
+  every attack-roll-trigger feat (Sharpshooter, Great Weapon Master,
+  Charger, Shield Master...) are accurate catalog data but still
+  display-only, same as documented in the v1.12 entry above.
+- **Equipment & gear catalog** (next up): item data (cost/weight/
+  properties), real starting-equipment rules by class + background
+  instead of a blank free-text inventory list.
 - Spellbook: real spell catalog, known/prepared spells, concentration
-  tracker. Also unblocks fixing the multiclass spell-save-DC simplification
-  noted in v1.11 (right now it only uses the starting class's ability).
+  tracker. Also unblocks fixing the multiclass spell-save-DC
+  simplification noted in v1.11, and would let Magic Initiate/Lucky-
+  adjacent feats finally compute their real effects.
 - Subclasses: currently a free-text field: turn it into real tracked
-  features by class and level.
-- Equipment & gear catalog: item data (cost/weight/properties), real
-  starting-equipment rules by class + background instead of a blank
-  free-text inventory list.
-- Level-up wizard: HP roll or average, prompts for ASI/feat at 4/8/12/16/19
-  and picking up a new class (now that multiclassing itself exists).
+  features by class and level. Deliberately last - the 2024 rules push
+  every class's subclass choice to level 3, so it's not part of the
+  initial character-build flow the other four items are.
+- Level-up wizard: HP roll or average, prompts for ASI-or-feat at
+  4/8/12/16/19 (now with a real feat catalog to choose from) and picking
+  up a new class (now that multiclassing itself exists). Also the right
+  place to fix the "total level, not per-class" ASI-slot simplification
+  from v1.12.
 - Session log with XP awards and loot, per campaign.
 - DM mode: party roster, initiative tracker, encounter builder.
 - Export a character to PDF / plain text for tables that want paper.

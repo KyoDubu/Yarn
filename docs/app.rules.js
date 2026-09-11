@@ -94,25 +94,25 @@
   // A background entry has exactly one of the two, never both.
   YARN.BACKGROUND_INFO = {
     "Acolyte":       { skills: ["insight", "religion"], tools: [], languages: 2, feature: "Shelter of the Faithful", blurb: "You served in a temple, devoted to a deity, with a faith community behind you." },
-    "Artisan":       { skills: ["investigation", "persuasion"], tools: ["One artisan's tools"], languages: 0, originFeat: "Crafter", blurb: "A skilled crafter who's spent years mastering a trade and building a reputation for quality work." },
+    "Artisan":       { skills: ["investigation", "persuasion"], tools: ["One artisan's tools"], languages: 0, originFeat: "Crafter", originFeatKey: "crafter", blurb: "A skilled crafter who's spent years mastering a trade and building a reputation for quality work." },
     "Charlatan":     { skills: ["deception", "sleightOfHand"], tools: ["Disguise kit", "Forgery kit"], languages: 0, feature: "False Identity", blurb: "A con artist adept at disguises, forged papers, and separating marks from their coin." },
     "Criminal":      { skills: ["deception", "stealth"], tools: ["One gaming set", "Thieves' tools"], languages: 0, feature: "Criminal Contact", blurb: "You have a network of shady contacts and a history of breaking the law to get by." },
     "Entertainer":   { skills: ["acrobatics", "performance"], tools: ["Disguise kit", "One musical instrument"], languages: 0, feature: "By Popular Demand", blurb: "A performer who's traveled from town to town, always ready to work a crowd." },
-    "Farmer":        { skills: ["animalHandling", "nature"], tools: ["Carpenter's tools"], languages: 0, originFeat: "Tough", blurb: "You worked the land, herding livestock and coaxing crops from difficult soil to keep a community fed." },
+    "Farmer":        { skills: ["animalHandling", "nature"], tools: ["Carpenter's tools"], languages: 0, originFeat: "Tough", originFeatKey: "tough", blurb: "You worked the land, herding livestock and coaxing crops from difficult soil to keep a community fed." },
     "Folk Hero":     { skills: ["animalHandling", "survival"], tools: ["One artisan's tools", "Vehicles (land)"], languages: 0, feature: "Rustic Hospitality", blurb: "A commoner who stood up against injustice and became a local legend for it." },
-    "Guard":         { skills: ["athletics", "perception"], tools: ["One gaming set"], languages: 0, originFeat: "Alert", blurb: "You stood watch over a gate, caravan, or vault, trained to notice trouble before it starts." },
-    "Guide":         { skills: ["stealth", "survival"], tools: ["Cartographer's tools"], languages: 0, originFeat: "Magic Initiate (Druid)", blurb: "You've led travelers through unfamiliar and often dangerous terrain, reading the land like a map." },
+    "Guard":         { skills: ["athletics", "perception"], tools: ["One gaming set"], languages: 0, originFeat: "Alert", originFeatKey: "alert", blurb: "You stood watch over a gate, caravan, or vault, trained to notice trouble before it starts." },
+    "Guide":         { skills: ["stealth", "survival"], tools: ["Cartographer's tools"], languages: 0, originFeat: "Magic Initiate (Druid)", originFeatKey: "magicInitiate", blurb: "You've led travelers through unfamiliar and often dangerous terrain, reading the land like a map." },
     "Guild Artisan": { skills: ["insight", "persuasion"], tools: ["One artisan's tools"], languages: 1, feature: "Guild Membership", blurb: "A skilled tradesperson backed by a powerful guild and its connections." },
     "Hermit":        { skills: ["medicine", "religion"], tools: ["Herbalism kit"], languages: 1, feature: "Discovery", blurb: "You lived in seclusion, seeking enlightenment or hiding from the world - and found something." },
-    "Merchant":      { skills: ["animalHandling", "persuasion"], tools: ["Navigator's tools"], languages: 0, originFeat: "Lucky", blurb: "A trader who's haggled across markets and caravan routes, always chasing the next good deal." },
+    "Merchant":      { skills: ["animalHandling", "persuasion"], tools: ["Navigator's tools"], languages: 0, originFeat: "Lucky", originFeatKey: "lucky", blurb: "A trader who's haggled across markets and caravan routes, always chasing the next good deal." },
     "Noble":         { skills: ["history", "persuasion"], tools: ["One gaming set"], languages: 1, feature: "Position of Privilege", blurb: "Born to wealth and privilege, you're used to influence, etiquette, and being obeyed." },
     "Outlander":     { skills: ["athletics", "survival"], tools: ["One musical instrument"], languages: 1, feature: "Wanderer", blurb: "Raised in the wilds far from civilization, you're a survivor first and a socialite never." },
     "Sage":          { skills: ["arcana", "history"], tools: [], languages: 2, feature: "Researcher", blurb: "A scholar who devoted years to research, libraries, and chasing knowledge for its own sake." },
     "Sailor":        { skills: ["athletics", "perception"], tools: ["Navigator's tools", "Vehicles (water)"], languages: 0, feature: "Ship's Passage", blurb: "You've spent your life at sea, weathering storms and rough crews to see distant shores." },
-    "Scribe":        { skills: ["investigation", "perception"], tools: ["Calligrapher's supplies"], languages: 0, originFeat: "Skilled", blurb: "You made your living with careful handwriting and sharp research, copying texts and hunting down facts." },
+    "Scribe":        { skills: ["investigation", "perception"], tools: ["Calligrapher's supplies"], languages: 0, originFeat: "Skilled", originFeatKey: "skilled", blurb: "You made your living with careful handwriting and sharp research, copying texts and hunting down facts." },
     "Soldier":       { skills: ["athletics", "intimidation"], tools: ["One gaming set", "Vehicles (land)"], languages: 0, feature: "Military Rank", blurb: "A trained veteran of a military campaign, disciplined and used to a chain of command." },
     "Urchin":        { skills: ["sleightOfHand", "stealth"], tools: ["Disguise kit", "Thieves' tools"], languages: 0, feature: "City Secrets", blurb: "A streetwise survivor who grew up with nothing and learned to take what you needed." },
-    "Wayfarer":      { skills: ["insight", "stealth"], tools: ["Thieves' tools"], languages: 0, originFeat: "Lucky", blurb: "A wanderer who grew up on the road or the streets, relying on instinct and quick feet to get by." }
+    "Wayfarer":      { skills: ["insight", "stealth"], tools: ["Thieves' tools"], languages: 0, originFeat: "Lucky", originFeatKey: "lucky", blurb: "A wanderer who grew up on the road or the streets, relying on instinct and quick feet to get by." }
   };
 
   // ---- 2024 background ability score choices --------------------------
@@ -147,6 +147,100 @@
   YARN.backgroundAbilityChoices = function (name) {
     return YARN.BACKGROUND_ABILITY_CHOICES[name] || [];
   };
+
+  // ---- Feats -------------------------------------------------------------
+  // Two very different "when do I get one" rules, both real 5e mechanics:
+  //   - category "origin": free at level 1, handed to you automatically by
+  //     your Background (see BACKGROUND_INFO's originFeatKey) - no choice,
+  //     no level gate, not spent from anywhere.
+  //   - category "general" / "racial": a character CHOOSES one of these
+  //     instead of an Ability Score Improvement, and only at the levels
+  //     where a class actually offers an ASI (YARN.ASI_LEVELS = 4/8/12/16/
+  //     19) - see minLevel below and the level-gate in app.ui.js's Feats
+  //     panel. "racial" is its own category because it also carries a
+  //     species prerequisite (prereqText) on top of the level gate.
+  //
+  // mechanic tags this file actually computes (see app.core.js):
+  //   "flatHpPerLevel" - adds mechanicValue x total level to suggested HP
+  //   "abilityBonus"   - +1 to a CHOSEN ability from abilityChoices
+  //   (grantsSaveProf: true also adds proficiency in that same save - Resilient only)
+  //   Alert's initiative bonus (+ proficiency bonus, 2024 wording) is
+  //   special-cased directly in YARN.initiative() - only one feat needs it,
+  //   not worth inventing a whole mechanic tag for a single instance.
+  // Everything else (mechanic: null) is real, correctly-described feat
+  // data, just not simulated yet - same honest "display only" treatment
+  // Origin Feats already got in v1.10, for the same reason: combat-trigger
+  // and resource-pool feats (Lucky's luck points, Magic Initiate's spells,
+  // Great Weapon Master's bonus attack, etc.) need systems Yarn doesn't
+  // have yet (a real spell list, a resource-tracker hook, an attack-roll
+  // flow) and half-simulating one of them would be worse than being clear
+  // it's manual.
+  YARN.FEATS = [
+    // -- Origin feats (2024 PHB) - granted by background, level 1 --------
+    { key: "alert", name: "Alert", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "You gain a bonus to initiative rolls equal to your proficiency bonus, can't be surprised while conscious, and other creatures don't gain advantage on attack rolls against you from being unseen." },
+    { key: "crafter", name: "Crafter", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "You gain proficiency with three artisan's tools of your choice, buy nonmagical items at a 20% discount, and craft them in less time." },
+    { key: "healer", name: "Healer", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "Using a healer's kit to stabilize a dying creature also restores 1 HP to them, and spending your own healer's kit charges restores extra HP to a creature you tend outside combat." },
+    { key: "lucky", name: "Lucky", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "You have a pool of Luck Points (equal to your proficiency bonus) you can spend to give yourself advantage on a d20 test, or to impose disadvantage on an attack roll against you. The pool refills on a long rest." },
+    { key: "magicInitiate", name: "Magic Initiate", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "You learn two cantrips and one 1st-level spell from a chosen class's spell list; you can cast that 1st-level spell once without a slot, regaining the ability on a long rest." },
+    { key: "musician", name: "Musician", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "You gain proficiency with three musical instruments of your choice, and playing one for a short rest lets each participant gain a Heroic Inspiration die once you finish." },
+    { key: "savageAttacker", name: "Savage Attacker", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "Once per turn when you hit with a weapon attack, you can roll the weapon's damage dice twice and use either total." },
+    { key: "skilled", name: "Skilled", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "You gain proficiency in any combination of three skills or tools of your choice." },
+    { key: "tavernBrawler", name: "Tavern Brawler", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: null, blurb: "Your unarmed strikes use a d4 for damage and count as magical, you can grapple as a bonus action after hitting with one, and you gain proficiency with unarmed strikes and improvised weapons." },
+    { key: "tough", name: "Tough", category: "origin", minLevel: 1, abilityChoices: null,
+      mechanic: "flatHpPerLevel", mechanicValue: 2,
+      blurb: "Your hit point maximum increases by 2 for every level you have - retroactively for every level you'll ever gain." },
+
+    // -- General feats (2024 PHB) - taken INSTEAD of an ASI, level 4+ ----
+    { key: "actor", name: "Actor", category: "general", minLevel: 4, abilityChoices: ["cha"],
+      mechanic: "abilityBonus", blurb: "You have advantage on Deception and Performance checks made to pass as someone else, and can mimic another person's speech or a creature's sounds." },
+    { key: "athlete", name: "Athlete", category: "general", minLevel: 4, abilityChoices: ["str", "dex"],
+      mechanic: "abilityBonus", blurb: "Climbing no longer costs extra movement, you can stand from prone using only 5 feet of movement, and your running jump distance increases." },
+    { key: "charger", name: "Charger", category: "general", minLevel: 4, abilityChoices: null,
+      mechanic: null, blurb: "After using the Dash action, you can make one attack as a bonus action, or shove a creature - either gets a bonus if you moved 10+ feet in a straight line first." },
+    { key: "durable", name: "Durable", category: "general", minLevel: 4, abilityChoices: ["con"],
+      mechanic: "abilityBonus", blurb: "When you roll a Hit Die to regain HP, the total can't be less than twice your Constitution modifier." },
+    { key: "greatWeaponMaster", name: "Great Weapon Master", category: "general", minLevel: 4, abilityChoices: null,
+      mechanic: null, blurb: "Before a melee attack with a heavy weapon you're proficient with, you can take a -5 penalty to hit for a +10 bonus to damage; scoring a crit or reducing a creature to 0 HP lets you make a bonus-action attack." },
+    { key: "heavilyArmored", name: "Heavily Armored", category: "general", minLevel: 4, abilityChoices: ["str"],
+      mechanic: "abilityBonus", blurb: "You gain proficiency with heavy armor." },
+    { key: "keenMind", name: "Keen Mind", category: "general", minLevel: 4, abilityChoices: ["int"],
+      mechanic: "abilityBonus", blurb: "You always know which way is north, the number of hours until sunrise/sunset, and can accurately recall anything you've seen or heard in the past month." },
+    { key: "lightlyArmored", name: "Lightly Armored", category: "general", minLevel: 4, abilityChoices: ["str", "dex"],
+      mechanic: "abilityBonus", blurb: "You gain proficiency with light armor." },
+    { key: "mobile", name: "Mobile", category: "general", minLevel: 4, abilityChoices: null,
+      mechanic: null, blurb: "Your speed increases by 10 feet, difficult terrain doesn't slow your Dash, and making a melee attack against a creature stops it from provoking your opportunity attack for the rest of the turn." },
+    { key: "moderatelyArmored", name: "Moderately Armored", category: "general", minLevel: 4, abilityChoices: ["str", "dex"],
+      mechanic: "abilityBonus", blurb: "You gain proficiency with medium armor and shields." },
+    { key: "observant", name: "Observant", category: "general", minLevel: 4, abilityChoices: ["int", "wis"],
+      mechanic: "abilityBonus", blurb: "If you can see a creature's mouth and know its language, you can read lips; you gain +5 to passive Perception and passive Investigation." },
+    { key: "resilient", name: "Resilient", category: "general", minLevel: 4, abilityChoices: YARN.ABILITY_KEYS.slice(),
+      mechanic: "abilityBonus", grantsSaveProf: true, blurb: "You gain proficiency in saving throws using the chosen ability, on top of the +1 score increase." },
+    { key: "sharpshooter", name: "Sharpshooter", category: "general", minLevel: 4, abilityChoices: null,
+      mechanic: null, blurb: "Ranged weapon attacks ignore half and three-quarters cover, and before attacking you can take a -5 penalty to hit for a +10 bonus to damage." },
+    { key: "shieldMaster", name: "Shield Master", category: "general", minLevel: 4, abilityChoices: null,
+      mechanic: null, blurb: "If you take the Attack action, you can shove a creature with your shield as a bonus action, and you can add your shield's AC bonus to Dexterity saves against effects that target only you." },
+    { key: "weaponMaster", name: "Weapon Master", category: "general", minLevel: 4, abilityChoices: ["str", "dex"],
+      mechanic: "abilityBonus", blurb: "You gain proficiency with four weapons of your choice, and can use them to add extra weapon mastery properties (per the 2024 rules)." },
+
+    // -- Legacy racial feat (2014, Xanathar's Guide to Everything) -------
+    // The one that kicked off this whole feature - see the DEVLOG for the
+    // conversation. Never reprinted for 2024; kept here as "racial" so its
+    // species prerequisite is visible and enforced separately from the
+    // plain level gate every other general feat uses.
+    { key: "elvenAccuracy", name: "Elven Accuracy", category: "racial", minLevel: 4,
+      prereqText: "Elf or Half-Elf", abilityChoices: ["dex", "int", "wis", "cha"], mechanic: "abilityBonus",
+      blurb: "Whenever you have advantage on an attack roll using Dexterity, Intelligence, Wisdom, or Charisma, you can reroll one of the dice once (2014 Xanathar's Guide to Everything, p.74)." }
+  ];
+  YARN.featInfo = function (key) { return byKey(YARN.FEATS, key); };
 
   YARN.ALIGNMENTS = [
     "Lawful Good", "Neutral Good", "Chaotic Good",
