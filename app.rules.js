@@ -67,45 +67,70 @@
 
   // ---- Backgrounds ---------------------------------------------------
   YARN.BACKGROUNDS = [
-    "Acolyte", "Charlatan", "Criminal", "Entertainer", "Folk Hero", "Guild Artisan",
-    "Hermit", "Noble", "Outlander", "Sage", "Sailor", "Soldier", "Urchin"
+    "Acolyte", "Artisan", "Charlatan", "Criminal", "Entertainer", "Farmer", "Folk Hero",
+    "Guard", "Guide", "Guild Artisan", "Hermit", "Merchant", "Noble", "Outlander",
+    "Sage", "Sailor", "Scribe", "Soldier", "Urchin", "Wayfarer"
   ];
 
   // Keyed by the same display name stored on the character (background has
   // never had a separate key/name split - it's just a string). skills are
-  // ALWAYS granted (2014 PHB), never a player choice, so they can be baked
-  // straight into skillTotal the same way class saves are - no separate
-  // "which skills did my background give me" state to store or drift.
-  // tools/languages/feature are display-only text, same spirit as species
-  // traits: they never feed the math because Yarn has no tool-proficiency
-  // or language state to compute against yet.
+  // ALWAYS granted, never a player choice, so they can be baked straight
+  // into skillTotal the same way class saves are - no separate "which
+  // skills did my background give me" state to store or drift.
+  // tools/languages are display-only text, same spirit as species traits:
+  // they never feed the math because Yarn has no tool-proficiency or
+  // language state to compute against yet.
+  //
+  // Two flavors of "what does this background do besides skills" coexist
+  // here, and that's intentional rather than an inconsistency to clean up:
+  //   - The 13 original entries use `feature` (a 2014 PHB roleplay feature
+  //     like "Guild Membership" - text only, DM-adjudicated).
+  //   - The 7 newer entries (Artisan/Farmer/Guard/Guide/Merchant/Scribe/
+  //     Wayfarer, added for real 2024 PHB parity) use `originFeat` instead
+  //     (2024 backgrounds trade the roleplay feature for a granted feat).
+  //     Yarn doesn't simulate feat mechanics at all yet, so this is also
+  //     display-only for now - see backgroundPanel() in app.ui.js for how
+  //     the two get rendered differently.
+  // A background entry has exactly one of the two, never both.
   YARN.BACKGROUND_INFO = {
     "Acolyte":       { skills: ["insight", "religion"], tools: [], languages: 2, feature: "Shelter of the Faithful", blurb: "You served in a temple, devoted to a deity, with a faith community behind you." },
+    "Artisan":       { skills: ["investigation", "persuasion"], tools: ["One artisan's tools"], languages: 0, originFeat: "Crafter", blurb: "A skilled crafter who's spent years mastering a trade and building a reputation for quality work." },
     "Charlatan":     { skills: ["deception", "sleightOfHand"], tools: ["Disguise kit", "Forgery kit"], languages: 0, feature: "False Identity", blurb: "A con artist adept at disguises, forged papers, and separating marks from their coin." },
     "Criminal":      { skills: ["deception", "stealth"], tools: ["One gaming set", "Thieves' tools"], languages: 0, feature: "Criminal Contact", blurb: "You have a network of shady contacts and a history of breaking the law to get by." },
     "Entertainer":   { skills: ["acrobatics", "performance"], tools: ["Disguise kit", "One musical instrument"], languages: 0, feature: "By Popular Demand", blurb: "A performer who's traveled from town to town, always ready to work a crowd." },
+    "Farmer":        { skills: ["animalHandling", "nature"], tools: ["Carpenter's tools"], languages: 0, originFeat: "Tough", blurb: "You worked the land, herding livestock and coaxing crops from difficult soil to keep a community fed." },
     "Folk Hero":     { skills: ["animalHandling", "survival"], tools: ["One artisan's tools", "Vehicles (land)"], languages: 0, feature: "Rustic Hospitality", blurb: "A commoner who stood up against injustice and became a local legend for it." },
+    "Guard":         { skills: ["athletics", "perception"], tools: ["One gaming set"], languages: 0, originFeat: "Alert", blurb: "You stood watch over a gate, caravan, or vault, trained to notice trouble before it starts." },
+    "Guide":         { skills: ["stealth", "survival"], tools: ["Cartographer's tools"], languages: 0, originFeat: "Magic Initiate (Druid)", blurb: "You've led travelers through unfamiliar and often dangerous terrain, reading the land like a map." },
     "Guild Artisan": { skills: ["insight", "persuasion"], tools: ["One artisan's tools"], languages: 1, feature: "Guild Membership", blurb: "A skilled tradesperson backed by a powerful guild and its connections." },
     "Hermit":        { skills: ["medicine", "religion"], tools: ["Herbalism kit"], languages: 1, feature: "Discovery", blurb: "You lived in seclusion, seeking enlightenment or hiding from the world - and found something." },
+    "Merchant":      { skills: ["animalHandling", "persuasion"], tools: ["Navigator's tools"], languages: 0, originFeat: "Lucky", blurb: "A trader who's haggled across markets and caravan routes, always chasing the next good deal." },
     "Noble":         { skills: ["history", "persuasion"], tools: ["One gaming set"], languages: 1, feature: "Position of Privilege", blurb: "Born to wealth and privilege, you're used to influence, etiquette, and being obeyed." },
     "Outlander":     { skills: ["athletics", "survival"], tools: ["One musical instrument"], languages: 1, feature: "Wanderer", blurb: "Raised in the wilds far from civilization, you're a survivor first and a socialite never." },
     "Sage":          { skills: ["arcana", "history"], tools: [], languages: 2, feature: "Researcher", blurb: "A scholar who devoted years to research, libraries, and chasing knowledge for its own sake." },
     "Sailor":        { skills: ["athletics", "perception"], tools: ["Navigator's tools", "Vehicles (water)"], languages: 0, feature: "Ship's Passage", blurb: "You've spent your life at sea, weathering storms and rough crews to see distant shores." },
+    "Scribe":        { skills: ["investigation", "perception"], tools: ["Calligrapher's supplies"], languages: 0, originFeat: "Skilled", blurb: "You made your living with careful handwriting and sharp research, copying texts and hunting down facts." },
     "Soldier":       { skills: ["athletics", "intimidation"], tools: ["One gaming set", "Vehicles (land)"], languages: 0, feature: "Military Rank", blurb: "A trained veteran of a military campaign, disciplined and used to a chain of command." },
-    "Urchin":        { skills: ["sleightOfHand", "stealth"], tools: ["Disguise kit", "Thieves' tools"], languages: 0, feature: "City Secrets", blurb: "A streetwise survivor who grew up with nothing and learned to take what you needed." }
+    "Urchin":        { skills: ["sleightOfHand", "stealth"], tools: ["Disguise kit", "Thieves' tools"], languages: 0, feature: "City Secrets", blurb: "A streetwise survivor who grew up with nothing and learned to take what you needed." },
+    "Wayfarer":      { skills: ["insight", "stealth"], tools: ["Thieves' tools"], languages: 0, originFeat: "Lucky", blurb: "A wanderer who grew up on the road or the streets, relying on instinct and quick feet to get by." }
   };
 
   // ---- 2024 background ability score choices --------------------------
-  // Each background lists 3 candidate abilities (2024 PHB pattern). At
-  // creation you spend exactly 3 points across them: +2 to one and +1 to
-  // a different one, OR +1 to all three - see YARN.backgroundAsiValid.
-  // Yarn keeps its original 13-background list (rather than swapping in
-  // the 2024 PHB's renamed set) and assigns each a sensible 3-ability trio
-  // built from its existing governing skills, so the migration is scoped
-  // to "where does the ASI come from" without also rewriting every
-  // background's skills/tools/flavor into the newer official set.
+  // Each background lists 3 candidate abilities. At creation you spend
+  // exactly 3 points across them: +2 to one and +1 to a different one,
+  // OR +1 to all three - see YARN.backgroundAsiValid. The original 13
+  // entries got a trio built from their existing governing skills (Yarn
+  // kept those 13 rather than deleting them when 2024 dropped/renamed
+  // some); the 7 newer entries below use the real 2024 PHB values.
   YARN.BACKGROUND_ABILITY_CHOICES = {
     "Acolyte":       ["wis", "int", "cha"],
+    "Artisan":       ["str", "dex", "int"],
+    "Farmer":        ["str", "con", "wis"],
+    "Guard":         ["str", "int", "wis"],
+    "Guide":         ["dex", "con", "wis"],
+    "Merchant":      ["con", "int", "cha"],
+    "Scribe":        ["dex", "int", "wis"],
+    "Wayfarer":      ["dex", "wis", "cha"],
     "Charlatan":     ["cha", "dex", "int"],
     "Criminal":      ["cha", "dex", "con"],
     "Entertainer":   ["dex", "cha", "str"],

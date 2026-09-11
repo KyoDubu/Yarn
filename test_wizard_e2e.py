@@ -193,6 +193,15 @@ def main() -> int:
         )
         check("switching background clears the stale ability allocation", int_after_switch == 0)
 
+        print("\n  -- sheet's Background panel handles the new 2024-only backgrounds too --")
+        # Guide is one of the 7 newly-added 2024 PHB backgrounds - it has an
+        # originFeat, not a 2014-style feature, and the panel must render
+        # accordingly (real UI check, not just the underlying data lookup).
+        page.select_option('select[data-model="char.background"]', "Guide")
+        panel_text = page.inner_text(".wrap")
+        check("Guide's origin feat renders on the sheet", "Magic Initiate (Druid)" in panel_text)
+        check("Guide's granted skills render on the sheet", "Stealth" in panel_text and "Survival" in panel_text)
+
         browser.close()
 
     print("")

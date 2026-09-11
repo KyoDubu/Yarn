@@ -329,11 +329,19 @@
     var langs = info.languages
       ? "<p class=\"muted\" style=\"font-size:.7rem;margin:.3rem 0\">Languages: " + info.languages + " of your choice</p>"
       : "";
+    // 2014-style backgrounds carry `feature` (a roleplay perk); the 2024
+    // additions carry `originFeat` instead (a granted feat, not simulated -
+    // see the doc comment on YARN.BACKGROUND_INFO). Exactly one is present.
+    var perk = info.feature
+      ? '<p class="muted" style="font-size:.7rem;margin:.3rem 0">Feature: <b>' + esc(info.feature) + "</b> (roleplay/DM adjudicated)</p>"
+      : (info.originFeat
+          ? '<p class="muted" style="font-size:.7rem;margin:.3rem 0">Origin feat: <b>' + esc(info.originFeat) +
+            "</b> (2024 rules - feat mechanics aren't simulated yet, track its effects manually)</p>"
+          : "");
     return '<div class="panel"><h2>Background</h2>' +
       '<p class="muted" style="font-size:.7rem;margin:.1rem 0 .3rem">Skills granted: ' +
         skillNames.map(esc).join(", ") + "</p>" +
-      tools + langs +
-      '<p class="muted" style="font-size:.7rem;margin:.3rem 0"><b>' + esc(info.feature) + "</b> (feature - roleplay/DM adjudicated)</p>" +
+      tools + langs + perk +
       "</div>";
   }
 

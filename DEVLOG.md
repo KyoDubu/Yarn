@@ -1,13 +1,59 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-08 - Current build: **v1.9 "2024 rules: ASI moves from Species to Background"**_
+_Last updated: 2026-09-11 - Current build: **v1.10 "real 2024 backgrounds, added not swapped"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.9 and pushed to
+> Tree is clean, everything committed through v1.10 and pushed to
 > `https://github.com/KyoDubu/Yarn` (main branch). Nothing in flight.
 >
 > **LIVE URL:** https://kyodubu.github.io/Yarn/ - real GitHub Pages
 > hosting, verified working end-to-end.
+>
+> **v1.10 - the 7 missing 2024 PHB backgrounds, additive:** v1.9 moved
+> the ASI math to 2024 rules but kept Yarn's original 13 background
+> *names* (2014 PHB list) rather than the real 2024 PHB's renamed
+> 16-background list. D asked for a deep-dive comparison, which showed
+> the two lists are NOT interchangeable - only 9 names survive as-is
+> (Acolyte, Charlatan, Criminal, Entertainer, Hermit, Noble, Sage,
+> Sailor, Soldier); the 4 Yarn-only 2014 names (Folk Hero, Guild
+> Artisan, Outlander, Urchin) don't map cleanly onto any single 2024
+> equivalent (their skills split across two different new backgrounds
+> each, e.g. Outlander's Athletics/Survival spreads across Guard's
+> Athletics and Guide's Survival). Renaming/merging would have silently
+> changed which skills an existing character has, so D confirmed:
+> **add the missing 7, don't touch the 13.**
+>
+> Added, with real 2024 PHB data (skills, tool, Origin feat, ability
+> candidates - verified via 5etools' `backgrounds.json`, which cleanly
+> separates 2014 `PHB` and 2024 `XPHB` entries):
+> **Artisan, Farmer, Guard, Guide, Merchant, Scribe, Wayfarer.**
+> `YARN.BACKGROUNDS` is now 20 entries, fully alphabetized (no test
+> depended on the old order).
+>
+> The interesting wrinkle: 2024 backgrounds don't grant a roleplay
+> **feature** like 2014 ones do (Guild Membership, Rustic Hospitality,
+> etc.) - they grant an **Origin feat** instead (Crafter, Tough, Alert,
+> Lucky...). Yarn doesn't simulate feat mechanics at all, so `originFeat`
+> is display-only, same spirit as `feature` always was. Each
+> `BACKGROUND_INFO` entry now has **exactly one** of `feature` /
+> `originFeat`, never both - `backgroundPanel()` in `app.ui.js` renders
+> whichever one is present. Everything else (skills baked into
+> `skillTotal`, the 2024 ability-choice picker from v1.9) is 100%
+> shared code - the 7 new backgrounds needed zero new plumbing, only
+> new data, because the background system was already generic.
+>
+> Added a background data-integrity test to `test_rules.py` (mirrors
+> `test_species.py`'s pattern): loops every background, checks it has
+> exactly 2 real skills, exactly one of feature/originFeat, a blurb, and
+> exactly 3 unique valid ability candidates. Plus an end-to-end spot
+> check on Guide (one of the new ones) and a sheet-rendering check that
+> its origin feat actually shows up in the Background panel.
+>
+> **Full test suite: 199 assertions across 7 files, all green** -
+> `test_rules.py` (44), `test_species.py` (28), `test_homebrew.py` (21),
+> `test_wizard.py` (45), `test_wizard_e2e.py` (33),
+> `test_wizard_abilities_e2e.py` (17), `test_sync_mock.py` (11).
+> Re-run any of them with `.venv\Scripts\python -u <file>.py`.
 >
 > **v1.9 - the big rules migration, 2014 -> 2024:** D confirmed Yarn
 > should follow the 2024 PHB's ability-score model: **species now

@@ -48,7 +48,7 @@ CASES = [
     ("profBonus(5)", "YARN.profBonus(5)", 3),
     ("profBonus(20)", "YARN.profBonus(20)", 6),
     # Species ASI is applied to the base score
-        ("elf dex 16 + background ASI -> 18", "YARN.abilityScore(C, P, 'dex')", 18),
+    ("elf dex 16 + background ASI -> 18", "YARN.abilityScore(C, P, 'dex')", 18),
     ("dex mod +4", "YARN.abilityMod(C, P, 'dex')", 4),
     # Rogue is proficient in dex + int saves, not con
     ("dex save +7", "YARN.saveTotal(C, P, 'dex')", 7),
@@ -180,6 +180,77 @@ def main() -> int:
             ("ui block present", norm["uiPresent"], True),
         ]
         for label, actual, expected in norm_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
+        # ---- background data integrity (20 backgrounds: 13 original + 7
+        # added for real 2024 PHB parity, additive not a rename) ----------
+        print("\n  -- background data integrity --")
+        bg_report = page.evaluate(
+            """() => {
+                const problems = [];
+                const validSkills = YARN.SKILLS.map(s => s.key);
+                YARN.BACKGROUNDS.forEach(name => {
+                    const info = YARN.BACKGROUND_INFO[name];
+                    if (!info) { problems.push(name + ' missing BACKGROUND_INFO'); return; }
+                    if (!Array.isArray(info.skills) || info.skills.length !== 2) {
+                        problems.push(name + ' does not grant exactly 2 skills');
+                    } else {
+                        info.skills.forEach(k => {
+                            if (validSkills.indexOf(k) === -1) { problems.push(name + ' has unknown skill ' + k); }
+                        });
+                    }
+                    const hasFeature = !!info.feature, hasOriginFeat = !!info.originFeat;
+                    if (hasFeature === hasOriginFeat) {
+                        problems.push(name + ' must have exactly one of feature/originFeat, has feature=' +
+                            hasFeature + ' originFeat=' + hasOriginFeat);
+                    }
+                    if (!info.blurb) { problems.push(name + ' has no blurb'); }
+                    const choices = YARN.backgroundAbilityChoices(name);
+                    if (choices.length !== 3) { problems.push(name + ' ability choices should be 3, got ' + choices.length); }
+                    if (new Set(choices).size !== choices.length) { problems.push(name + ' ability choices has duplicates'); }
+                    choices.forEach(k => {
+                        if (YARN.ABILITY_KEYS.indexOf(k) === -1) { problems.push(name + ' has unknown ability ' + k); }
+                    });
+                });
+                return { count: YARN.BACKGROUNDS.length, problems };
+            }"""
+        )
+        bg_cases = [
+            ("20 backgrounds total (13 original + 7 added for 2024 parity)", bg_report["count"], 20),
+            ("no background data-integrity problems", bg_report["problems"], []),
+        ]
+        for label, actual, expected in bg_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
+        # spot-check one of the new 2024-only backgrounds end to end
+        guide = page.evaluate(
+            """() => {
+                const info = YARN.BACKGROUND_INFO['Guide'];
+                return {
+                    skills: info.skills,
+                    tools: info.tools,
+                    originFeat: info.originFeat,
+                    hasFeature: !!info.feature,
+                    abilityChoices: YARN.backgroundAbilityChoices('Guide')
+                };
+            }"""
+        )
+        guide_cases = [
+            ("Guide grants stealth + survival (real 2024 PHB data)", guide["skills"], ["stealth", "survival"]),
+            ("Guide grants Cartographer's tools", guide["tools"], ["Cartographer's tools"]),
+            ("Guide grants the Magic Initiate (Druid) origin feat, not a 2014 feature",
+             (guide["originFeat"], guide["hasFeature"]), ("Magic Initiate (Druid)", False)),
+            ("Guide's ability candidates are dex/con/wis", guide["abilityChoices"], ["dex", "con", "wis"]),
+        ]
+        for label, actual, expected in guide_cases:
             ok = actual == expected
             print(("  PASS  " if ok else "  FAIL  ") + label
                   + "  expected=" + repr(expected) + " actual=" + repr(actual))
