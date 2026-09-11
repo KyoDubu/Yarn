@@ -123,9 +123,19 @@
         return '<button class="wz-card' + (on ? " sel" : "") + '" data-wz="concept-pick:' + it.key + '" aria-pressed="' + on + '">' +
           '<span class="wz-card-title">' + esc(it.name) + '</span><span class="wz-card-hint">' + esc(it.hint) + '</span></button>';
       }).join("") + '</div>' +
-      '<div class="wz-field"><label for="wzConcept">Concept, personality, or theme (optional)</label>' +
-        '<textarea id="wzConcept" data-wz="concept-description" rows="3" placeholder="A cheerful former guard who wants to protect travelers...">' +
-          esc(S.concept.description) + '</textarea></div>';
+      '<p class="wz-help muted">Your concept is optional. Use the notes panel beside this wizard to keep adding ideas as the character takes shape.</p>';
+  }
+
+  function conceptNotesMarkup() {
+    var label = S.concept.fantasy ? S.concept.fantasy : "No starting concept yet";
+    return '<aside class="wz-notes" aria-label="Character concept notes">' +
+      '<h3>Concept notes</h3>' +
+      '<p class="wz-notes-picked">' + esc(label) + '</p>' +
+      '<label for="wzConceptNotes">Keep building the idea</label>' +
+      '<textarea id="wzConceptNotes" data-wz="concept-description" rows="8" placeholder="Personality, goals, visual details, names, relationships...">' +
+        esc(S.concept.description) + '</textarea>' +
+      '<p class="wz-notes-help">These notes stay with you on every step and are saved to the character.</p>' +
+      '</aside>';
   }
 
   function stepMode() {
@@ -463,6 +473,7 @@
     }).join("");
     var last = S.step === STEPS.length - 1;
     overlay.querySelector(".wz-modal").innerHTML =
+      '<div class="wz-layout">' + conceptNotesMarkup() + '<div class="wz-main">' +
       '<div class="wz-head"><div class="wz-progress">' + dots + "</div>" +
         '<button class="wz-x" data-wz="cancel" aria-label="Cancel">\u00d7</button></div>' +
       '<h2 id="wzTitle">Step ' + (S.step + 1) + " of " + STEPS.length + " \u00b7 " + esc(STEP_TITLES[stepKey]) + "</h2>" +
@@ -473,7 +484,7 @@
         (last
           ? '<button class="wz-btn primary" data-wz="create">Create character</button>'
           : '<button class="wz-btn primary" data-wz="next"' + (canAdvance() ? "" : " disabled") + ">Next</button>") +
-      "</div>";
+      "</div></div></div>";
     var subHost = overlay.querySelector(".wz-sub-host");
     subHost.innerHTML = (stepKey === "species" && S.subModalOpen) ? subModalMarkup() : "";
     var focusTarget = subHost.querySelector("button, input, select") ||
