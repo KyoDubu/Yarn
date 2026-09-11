@@ -126,6 +126,26 @@
       '<p class="wz-help muted">Your concept is optional. Use the notes panel beside this wizard to keep adding ideas as the character takes shape.</p>';
   }
 
+  function speciesContextMarkup() {
+    var species = YARN.speciesInfo(S.species);
+    if (!species) { return ''; }
+    var subMarkup = '';
+    if (Array.isArray(species.subraces) && species.subraces.length) {
+      subMarkup = '<h4>Choose a subrace</h4><div class="wz-context-options">' + species.subraces.map(function (sub) {
+        var selected = S.subspecies === sub.key;
+        return '<button class="wz-context-option' + (selected ? ' sel' : '') + '" data-wz="pick:subspecies:' + esc(sub.key) + '" aria-pressed="' + selected + '">' +
+          esc(sub.name) + (sub.blurb ? '<span>' + esc(sub.blurb) + '</span>' : '') + '</button>';
+      }).join('') + '</div>';
+    }
+    return '<aside class="wz-context" aria-live="polite" aria-label="Selected species information">' +
+      '<h3>' + esc(species.name) + '</h3>' +
+      (species.blurb ? '<p class="wz-context-blurb">' + esc(species.blurb) + '</p>' : '') +
+      '<dl class="wz-context-facts"><div><dt>Size</dt><dd>' + esc(species.size) + '</dd></div><div><dt>Speed</dt><dd>' + esc(species.speed) + ' ft</dd></div></dl>' +
+      (species.traits && species.traits.length ? '<h4>Traits</h4><ul>' + species.traits.map(function (trait) { return '<li>' + esc(trait) + '</li>'; }).join('') + '</ul>' : '') +
+      subMarkup +
+      '</aside>';
+  }
+
   function conceptNotesMarkup() {
     var label = S.concept.fantasy ? S.concept.fantasy : "No starting concept yet";
     return '<aside class="wz-notes" aria-label="Character concept notes">' +
@@ -169,22 +189,11 @@
       return { key: s.key, name: s.name, hint: s.size + " \u00b7 " + s.speed + "ft" + tag };
     });
     var species = YARN.speciesInfo(S.species);
-    var subLine = "";
-    if (species && Array.isArray(species.subraces) && species.subraces.length) {
-      var sub = YARN.subspeciesInfo(S.species, S.subspecies);
-      subLine = '<div class="wz-subrace-bar">' +
-        (sub
-          ? '<span class="wz-subrace-chosen">Subrace: <b>' + esc(sub.name) + "</b></span>"
-          : '<span class="wz-subrace-chosen wz-subrace-missing">No subrace chosen yet</span>') +
-        '<button class="wz-btn" data-wz="open-subrace">' + (sub ? "Change subrace" : "Choose subrace") + "</button>" +
-        "</div>";
-    }
     var picked = YARN.speciesInfo(S.species);
     return '<p class="wz-lead">Species sets your size, speed and other traits - your ability bonus comes from your ' +
       "Background instead (2024 rules).</p>" +
       '<div class="wz-cards wz-cards-grid">' + radioCards(sp, S.species, "species", "key", "name", "hint") + "</div>" +
-      (picked && picked.blurb ? '<p class="wz-blurb">' + esc(picked.name) + ": " + esc(picked.blurb) + "</p>" : "") +
-      subLine;
+      (picked && picked.blurb ? '<p class="wz-blurb">' + esc(picked.name) + ": " + esc(picked.blurb) + "</p>" : "");
   }
   // Standalone popup for picking a subrace - opened automatically the moment
   // a species with subraces is chosen, and reopenable via "Change subrace".
@@ -472,6 +481,7 @@
       return '<span class="wz-dot' + (i === S.step ? " on" : (i < S.step ? " done" : "")) + '"></span>';
     }).join("");
     var last = S.step === STEPS.length - 1;
+    var context = stepKey === "species" ? speciesContextMarkup() : "";
     overlay.querySelector(".wz-modal").innerHTML =
       '<div class="wz-layout">' + conceptNotesMarkup() + '<div class="wz-main">' +
       '<div class="wz-head"><div class="wz-progress">' + dots + "</div>" +
@@ -484,7 +494,7 @@
         (last
           ? '<button class="wz-btn primary" data-wz="create">Create character</button>'
           : '<button class="wz-btn primary" data-wz="next"' + (canAdvance() ? "" : " disabled") + ">Next</button>") +
-      "</div></div></div>";
+      "</div>" + context + "</div>";
     var subHost = overlay.querySelector(".wz-sub-host");
     subHost.innerHTML = (stepKey === "species" && S.subModalOpen) ? subModalMarkup() : "";
     var focusTarget = subHost.querySelector("button, input, select") ||
@@ -588,7 +598,7 @@
           // Auto-open the subrace popup the moment a species that has one
           // is chosen - matches the rulebook: subraces aren't optional
           // where they exist, so don't make the player go hunting for them.
-          S.subModalOpen = !!(picked && Array.isArray(picked.subraces) && picked.subraces.length);
+          S.subModalOpen = false;
         }
         if (args[0] === "subspecies") {
           S.subModalOpen = false; // picking one is the only thing to do in there - close it
