@@ -193,7 +193,7 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 .wz-context-option:hover, .wz-context-option.sel { border-color: var(--accent); background: rgba(181, 131, 79, .16); }
 .wz-context-option span { display: block; color: var(--muted); font-size: .65rem; margin-top: .15rem; }
 .wz-notes-help { color: var(--muted); font-size: .68rem; line-height: 1.35; margin: .55rem 0 0; }
-@media (max-width: 700px) {
+@media (max-width: 480px) {
   .wz-layout { grid-template-columns: 1fr; gap: .8rem; }
   .wz-notes, .wz-context { position: static; grid-column: auto; }
   .wz-notes { order: 2; }
