@@ -1,13 +1,81 @@
 # Yarn - DEVLOG
 
-_Last updated: 2026-09-11 - Current build: **v1.10 "real 2024 backgrounds, added not swapped"**_
+_Last updated: 2026-09-11 - Current build: **v1.11 "real multiclassing (RAW hit dice, saves, and spell slots)"**_
 
 > ## Handoff note (session restart pending)
-> Tree is clean, everything committed through v1.10 and pushed to
+> Tree is clean, everything committed through v1.11 and pushed to
 > `https://github.com/KyoDubu/Yarn` (main branch). Nothing in flight.
 >
 > **LIVE URL:** https://kyodubu.github.io/Yarn/ - real GitHub Pages
 > hosting, verified working end-to-end.
+>
+> **The big-picture ask behind v1.10 and v1.11:** D wants Yarn's Standard
+> mode built out to be genuinely comprehensive - both 2014 and 2024
+> vernacular/rules available side by side for a table of 5-10 players,
+> with Homebrew staying scoped to what it's always meant (custom
+> skills/currencies/resource meters), not "which edition". The identified
+> gap list, in priority order the group picked: **multiclassing (done,
+> this entry) -> feats -> spellbook -> subclasses -> equipment catalog.**
+> Each is its own scoped epic; don't try to do them all at once.
+>
+> **v1.11 - multiclassing, done with real RAW math, not just a free-text
+> field:** Added `prog.classLevels` - a per-CAMPAIGN breakdown like
+> `{fighter: 3, wizard: 2}`. It lives on progress, not the character,
+> because multiclassing is something that happens THROUGH PLAY (you
+> can't multiclass at level 1 chargen), so the wizard is untouched - it
+> stays single-class, which is RAW-correct. Empty `classLevels` (the
+> default) means "never multiclassed", falling back byte-for-byte to the
+> old single-class math - verified with an explicit regression test that
+> the level-5 rogue fixture's `classLevels` stays empty and its behavior
+> is bit-identical to before this change.
+>
+> New `YARN.classBreakdown(char, prog)` in `app.core.js` is the single
+> source of truth every level-dependent calc now reads from - always
+> orders `char.klass` (the class chosen at creation) first, because RAW
+> cares which class you STARTED as for two things: saving throw
+> proficiencies only ever come from that one class, and only your very
+> first character level ever gets a MAX (not average) hit die roll.
+> `YARN.totalLevel()` sums it for proficiency bonus/XP display.
+>
+> Rebuilt from that breakdown: **`suggestedHpMax`** (mixed hit dice per
+> class, correct "only level 1 is max" rule), **`spellSlots`** (full
+> casters contribute their whole level, half casters floor(level/2),
+> third casters floor(level/3), summed and looked up on the existing
+> full-caster table - this is the real Multiclass Spellcasting formula
+> from the PHB). Also added **`YARN.PACT_SLOTS`** to `app.rules.js` and
+> fixed a bug that predates multiclassing entirely: Warlock's Pact Magic
+> was silently being computed on the FULL-caster table (wrong even for a
+> single-classed Warlock - Pact Magic is its own tiny short-rest pool).
+> `spellSlots()`'s return shape changed from a bare array to
+> `{slots, pact}` - safe, since nothing in the UI or tests consumed the
+> old shape yet (spell slots aren't surfaced on the sheet at all - that's
+> the still-open "Spellbook" epic).
+>
+> **Known, deliberate simplification:** `spellSaveDC`/`spellAttack` still
+> use only the STARTING class's casting ability - true multiclass 5e has
+> a separate DC per casting class. Flagged in-code; fixing it properly
+> needs the same real spell-list data the Spellbook epic needs anyway,
+> so it's not worth half-building here.
+>
+> New sheet UI: a **Classes panel** folded into the existing identity
+> panel. Single-classed (the default): just a small "+ Multiclass" link,
+> zero visual change otherwise. Click it and answer two prompts (which
+> class, how many levels) and it seeds the breakdown, locking in the
+> starting class's current level so nothing resets to 1; the plain Level
+> field becomes a computed, disabled display showing the true total, and
+> a "Revert to single class" button collapses it back down (preserving
+> the total, not losing progress). Followed the same `window.prompt`
+> pattern already used for custom skills/currencies - no new UI paradigm
+> introduced. Added `YARN.hitDicePool()` too (hit dice grouped by die
+> size) - not wired into a rest-tracker UI yet, but it's what one will
+> need, and it fell straight out of the same breakdown for free.
+>
+> **Full test suite: 216 assertions across 7 files, all green** - 10 new
+> hand-verified RAW math cases in `test_rules.py` (Fighter 3/Wizard 2 and
+> Warlock 5/Sorcerer 3, covering total level, prof bonus, saves, HP, and
+> both spell-slot pools) plus a real end-to-end UI test in
+> `test_wizard_e2e.py` that drives the actual Classes panel through
+> Playwright, including answering the real `window.prompt` dialogs.
 >
 > **v1.10 - the 7 missing 2024 PHB backgrounds, additive:** v1.9 moved
 > the ASI math to 2024 rules but kept Yarn's original 13 background
@@ -496,11 +564,23 @@ Source of truth = `yarn.html` + the `app.*.js` modules + `sw.js`.
 
 ---
 
-## Possible next steps (not started)
+## Possible next steps (agreed priority order as of v1.11 - "flesh out
+## Standard mode" epic, each one scoped separately, do NOT batch these)
 
-- Spellbook: known/prepared spells, slots by class table, concentration tracker.
-- Level-up wizard: HP roll or average, ASI/feat at 4/8/12/16/19, subclass prompts.
+- **Feats** (next up): Origin/General 2024 feats + legacy 2014 feats like
+  Elven Accuracy. Real mechanics, not just a label - start with the easy
+  flat-math ones (Tough's +2 HP/level) before the ones needing new UI
+  (Skilled's proficiency picker) or new data (Magic Initiate's spells).
+- Spellbook: real spell catalog, known/prepared spells, concentration
+  tracker. Also unblocks fixing the multiclass spell-save-DC simplification
+  noted in v1.11 (right now it only uses the starting class's ability).
+- Subclasses: currently a free-text field: turn it into real tracked
+  features by class and level.
+- Equipment & gear catalog: item data (cost/weight/properties), real
+  starting-equipment rules by class + background instead of a blank
+  free-text inventory list.
+- Level-up wizard: HP roll or average, prompts for ASI/feat at 4/8/12/16/19
+  and picking up a new class (now that multiclassing itself exists).
 - Session log with XP awards and loot, per campaign.
 - DM mode: party roster, initiative tracker, encounter builder.
-- Cloud sync via the `kyodububb` Firebase project (mirror Budget's household model).
 - Export a character to PDF / plain text for tables that want paper.

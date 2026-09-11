@@ -225,6 +225,30 @@
     [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1]
   ];
 
+  // ---- Pact Magic slots (Warlock only) ---------------------------------
+  // Warlock's "pact" caster type does NOT use the full-caster table above -
+  // it has its own tiny, fixed-shape progression: fewer slots overall, but
+  // they're always the highest level Warlock can reach, and they recharge
+  // on a SHORT rest rather than a long one. This table was previously
+  // missing entirely - YARN.spellSlots() silently treated "pact" the same
+  // as "full", which is wrong even for a single-classed Warlock. Fixed as
+  // part of the multiclass work since multiclass math has to keep Warlock
+  // levels out of the combined full/half/third table anyway.
+  // Row = Warlock level -> { count: slots available, level: slot level }.
+  YARN.PACT_SLOTS = [
+    null,
+    { count: 1, level: 1 }, { count: 2, level: 1 },
+    { count: 2, level: 2 }, { count: 2, level: 2 },
+    { count: 2, level: 3 }, { count: 2, level: 3 },
+    { count: 2, level: 4 }, { count: 2, level: 4 },
+    { count: 2, level: 5 }, { count: 2, level: 5 },
+    { count: 3, level: 5 }, { count: 3, level: 5 },
+    { count: 3, level: 5 }, { count: 3, level: 5 },
+    { count: 3, level: 5 }, { count: 3, level: 5 },
+    { count: 4, level: 5 }, { count: 4, level: 5 },
+    { count: 4, level: 5 }, { count: 4, level: 5 }
+  ];
+
   // Levels at which most classes gain an Ability Score Improvement.
   YARN.ASI_LEVELS = [4, 8, 12, 16, 19];
 

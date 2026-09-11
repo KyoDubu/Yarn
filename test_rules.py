@@ -257,6 +257,88 @@ def main() -> int:
             if not ok:
                 failures.append(label)
 
+        # ---- multiclassing: real RAW math, opt-in via prog.classLevels ----
+        print("\n  -- multiclassing (Fighter 3 / Wizard 2, starting class Fighter) --")
+        mc = page.evaluate(
+            """() => {
+                const full = YARN.normalize({ characters: [{
+                    id: 'mc1', name: 'Multi', klass: 'fighter', species: 'human',
+                    background: 'Soldier',
+                    abilities: { str: 10, dex: 10, con: 14, int: 10, wis: 10, cha: 10 }
+                }] });
+                const ch = full.characters[0];
+                const prog = { level: 1, classLevels: { fighter: 3, wizard: 2 } };
+                return {
+                    totalLevel: YARN.totalLevel(ch, prog),
+                    profBonus: YARN.profBonus(YARN.totalLevel(ch, prog)),
+                    saveStr: YARN.saveTotal(ch, prog, 'str') > YARN.abilityMod(ch, prog, 'str'),
+                    saveInt: YARN.saveTotal(ch, prog, 'int') === YARN.abilityMod(ch, prog, 'int'),
+                    hp: YARN.suggestedHpMax(ch, prog),
+                    slots: YARN.spellSlots(ch, prog)
+                };
+            }"""
+        )
+        mc_cases = [
+            ("Fighter 3/Wizard 2 totals to character level 5", mc["totalLevel"], 5),
+            ("prof bonus uses the COMBINED total level (+3, not +2)", mc["profBonus"], 3),
+            ("STR save is proficient (Fighter is the starting class)", mc["saveStr"], True),
+            ("INT save is NOT proficient (multiclass levels don't add save profs)", mc["saveInt"], True),
+            ("HP: max d10 at lvl1, avg d10 x2, avg d6 x2, +2 CON every level = 40", mc["hp"], 40),
+            ("spell slots come only from the 2 Wizard levels (combined caster level 2)",
+             mc["slots"], {"slots": [3, 0, 0, 0, 0, 0, 0, 0, 0], "pact": None}),
+        ]
+        for label, actual, expected in mc_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
+        print("\n  -- multiclassing: Warlock 5 / Sorcerer 3 (Pact Magic stays separate) --")
+        mc2 = page.evaluate(
+            """() => {
+                const full = YARN.normalize({ characters: [{
+                    id: 'mc2', name: 'Patchwork', klass: 'warlock', species: 'human',
+                    background: 'Sage',
+                    abilities: { str:10,dex:10,con:10,int:10,wis:10,cha:14 }
+                }] });
+                const ch = full.characters[0];
+                const prog = { level: 1, classLevels: { warlock: 5, sorcerer: 3 } };
+                return { totalLevel: YARN.totalLevel(ch, prog), slots: YARN.spellSlots(ch, prog) };
+            }"""
+        )
+        mc2_cases = [
+            ("Warlock 5/Sorcerer 3 totals to character level 8", mc2["totalLevel"], 8),
+            ("Pact slots (from 5 Warlock levels) + separate full-caster slots (from 3 Sorcerer levels)",
+             mc2["slots"], {"slots": [4, 2, 0, 0, 0, 0, 0, 0, 0], "pact": {"count": 2, "level": 3}}),
+        ]
+        for label, actual, expected in mc2_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
+        print("\n  -- multiclassing: empty classLevels falls back to single-class, unchanged --")
+        fallback = page.evaluate(
+            """() => {
+                const C = YARN.getCharacter('char_rogue');
+                const P = YARN.getProgress('camp_a', 'char_rogue');
+                return { classLevelsEmpty: Object.keys(P.classLevels).length === 0,
+                         totalLevelMatchesProgLevel: YARN.totalLevel(C, P) === P.level };
+            }"""
+        )
+        fb_cases = [
+            ("the level-5 rogue fixture never touched classLevels", fallback["classLevelsEmpty"], True),
+            ("totalLevel() falls back to prog.level for single-class characters", fallback["totalLevelMatchesProgLevel"], True),
+        ]
+        for label, actual, expected in fb_cases:
+            ok = actual == expected
+            print(("  PASS  " if ok else "  FAIL  ") + label
+                  + "  expected=" + repr(expected) + " actual=" + repr(actual))
+            if not ok:
+                failures.append(label)
+
         browser.close()
 
     print("")

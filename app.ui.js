@@ -148,6 +148,41 @@
       esc(String(spent)) + "/3)</span></label><div>" + fields + "</div></div>";
   }
 
+  // ---- render: classes / multiclassing ----------------------------------
+  // "Multiclassed" means prog.classLevels has at least one entry. Empty is
+  // the default and the common case: single-classed, driven entirely by the
+  // existing char.klass + prog.level fields, unchanged. See
+  // YARN.classBreakdown() in app.core.js for how the fallback works.
+  function isMulticlassed(prog) {
+    return !!(prog.classLevels && Object.keys(prog.classLevels).length);
+  }
+
+  function classesPanel(char, prog) {
+    if (!isMulticlassed(prog)) {
+      return '<p class="muted" style="font-size:.7rem;margin:.3rem 0 0">Single-classed as ' +
+        esc(YARN.classInfo(char.klass) ? YARN.classInfo(char.klass).name : char.klass) +
+        '. <button type="button" class="ghost" data-action="add-class" style="margin-left:.4rem">+ Multiclass</button></p>';
+    }
+    var rows = YARN.classBreakdown(char, prog).map(function (entry) {
+      var name = entry.cls ? entry.cls.name : entry.key;
+      return '<li><span class="grow">' + esc(name) +
+        (entry.key === char.klass ? ' <span class="badge">starting</span>' : "") + "</span>" +
+        '<input type="number" min="1" max="20" data-type="number" data-restructure="1" style="width:3.5rem" ' +
+          'data-model="prog.classLevels.' + entry.key + '" value="' + entry.levels + '">' +
+        '<button type="button" class="danger" data-action="del-class:' + entry.key +
+          '" title="Remove this class">\u00d7</button></li>';
+    }).join("");
+    return '<div class="field" style="margin-top:.4rem">' +
+      '<label>Classes <span class="muted" style="font-weight:normal">(total level ' +
+        YARN.totalLevel(char, prog) + ")</span></label>" +
+      '<ul class="linelist">' + rows + "</ul>" +
+      '<button type="button" class="ghost" data-action="add-class">+ Add another class</button> ' +
+      '<button type="button" class="ghost" data-action="revert-multiclass">Revert to single class</button>' +
+      '<p class="muted" style="font-size:.65rem;margin:.3rem 0 0">Saving throw proficiencies only ever come ' +
+        "from your starting class, per the multiclassing rules.</p>" +
+    "</div>";
+  }
+
   function identityPanel(char, prog) {
     return '' +
       '<div class="panel span-2">' +
@@ -167,11 +202,16 @@
             selectStrings(YARN.BACKGROUNDS, "char.background", char.background).replace("<select ", '<select data-restructure="1" ') + "</div>" +
           '<div class="field"><label>Alignment</label>' +
             selectStrings(YARN.ALIGNMENTS, "char.alignment", char.alignment) + "</div>" +
-          '<div class="field"><label>Level</label>' +
-            '<input type="number" min="1" max="20" data-type="number" data-model="prog.level" value="' + (prog.level || 1) + '"></div>' +
+          '<div class="field"><label>Level' +
+            (isMulticlassed(prog) ? ' <span class="muted" style="font-weight:normal">(from classes)</span>' : '') + '</label>' +
+            (isMulticlassed(prog)
+              ? '<input type="number" value="' + YARN.totalLevel(char, prog) + '" disabled title="Computed from the Classes list below">'
+              : '<input type="number" min="1" max="20" data-type="number" data-model="prog.level" value="' + (prog.level || 1) + '">') +
+          "</div>" +
           '<div class="field"><label>XP</label>' +
             '<input type="number" min="0" data-type="number" data-model="prog.xp" value="' + (prog.xp || 0) + '"></div>' +
         "</div>" +
+        classesPanel(char, prog) +
         backgroundAsiControls(char) +
         '<div class="toggle-row">' +
           '<input type="checkbox" id="hbToggle" data-model="char.homebrew.enabled" data-restructure="1"' +
@@ -503,6 +543,48 @@
       YARN.save(); render(); return;
     }
     if (!char) { return; }
+
+    if (action === "add-class") {
+      var mcProg = activeProg();
+      if (!mcProg) { return; }
+      if (!mcProg.classLevels || typeof mcProg.classLevels !== "object") { mcProg.classLevels = {}; }
+      if (!Object.keys(mcProg.classLevels).length) {
+        // First time multiclassing this character in this campaign: lock
+        // in the starting class's current total level as its own explicit
+        // entry so nothing silently resets to 1.
+        mcProg.classLevels[char.klass] = Math.max(1, mcProg.level || 1);
+      }
+      var choices = YARN.CLASSES.filter(function (c) { return mcProg.classLevels[c.key] === undefined; });
+      if (!choices.length) { window.alert("Every class is already on this character!"); return; }
+      var hint = choices.map(function (c) { return c.key; }).join(", ");
+      var pick = (window.prompt("Add which class? (" + hint + ")") || "").toLowerCase().trim();
+      var newCls = YARN.classInfo(pick);
+      if (!newCls || mcProg.classLevels[pick] !== undefined) {
+        window.alert("That's not one of the available class keys: " + hint);
+        return;
+      }
+      var lvlStr = window.prompt("How many levels in " + newCls.name + "?", "1");
+      mcProg.classLevels[pick] = Math.max(1, Math.min(19, Number(lvlStr) || 1));
+      YARN.save(); render(); return;
+    }
+    if (action === "del-class" && arg) {
+      var dcProg = activeProg();
+      if (!dcProg || !dcProg.classLevels) { return; }
+      var remaining = Object.keys(dcProg.classLevels).filter(function (k) { return k !== arg; });
+      if (!remaining.length) {
+        window.alert("Can't remove your last class - use \"Revert to single class\" instead.");
+        return;
+      }
+      delete dcProg.classLevels[arg];
+      YARN.save(); render(); return;
+    }
+    if (action === "revert-multiclass") {
+      var rmProg = activeProg();
+      if (!rmProg) { return; }
+      rmProg.level = YARN.totalLevel(char, rmProg); // preserve the total, drop the breakdown
+      rmProg.classLevels = {};
+      YARN.save(); render(); return;
+    }
 
     if (action === "add-skill") {
       var sname = window.prompt("Custom skill name?");

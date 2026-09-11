@@ -71,6 +71,12 @@
     return {
       level: 1,
       xp: 0,
+      // Multiclass breakdown FOR THIS CAMPAIGN, e.g. {fighter: 3, wizard: 2}.
+      // Empty by default - an empty object means "single-classed, just use
+      // char.klass + level above" so every existing save and every player
+      // who never multiclasses sees zero change. Populating this is what
+      // actually turns on multiclass math - see YARN.totalLevel/classBreakdown.
+      classLevels: {},
       hpMax: 0,
       hpCurrent: 0,
       hpTemp: 0,
@@ -156,6 +162,7 @@
         bucket[cid].asi = fillDefaults(bucket[cid].asi || {}, blank.asi);
         if (!bucket[cid].currencyExtra || typeof bucket[cid].currencyExtra !== "object") { bucket[cid].currencyExtra = {}; }
         if (!bucket[cid].resourcesUsed || typeof bucket[cid].resourcesUsed !== "object") { bucket[cid].resourcesUsed = {}; }
+        if (!bucket[cid].classLevels || typeof bucket[cid].classLevels !== "object") { bucket[cid].classLevels = {}; }
       });
     });
 
@@ -324,12 +331,49 @@
     return YARN.mod(YARN.abilityScore(char, prog, key));
   };
 
+  // Ordered [{key, cls, levels}] breakdown of a character's classes WITHIN
+  // one campaign. char.klass (chosen at creation) always comes first - RAW
+  // cares which class you STARTED as for two things: saving throw
+  // proficiencies only ever come from that one, and its level 1 is the one
+  // that gets a max (not average) hit die. An empty prog.classLevels means
+  // "never multiclassed", so this falls back to the plain single-class
+  // shape Yarn has always used - zero behavior change for anyone who never
+  // touches the multiclass UI.
+  YARN.classBreakdown = function (char, prog) {
+    var extra = (prog && prog.classLevels) || {};
+    var keys = Object.keys(extra);
+    if (!keys.length) {
+      var lvl = Math.max(1, (prog && prog.level) || 1);
+      return [{ key: char.klass, cls: YARN.classInfo(char.klass), levels: lvl }];
+    }
+    var out = [], starterSeen = false;
+    if (extra[char.klass] !== undefined) {
+      out.push({ key: char.klass, cls: YARN.classInfo(char.klass), levels: Math.max(1, extra[char.klass]) });
+      starterSeen = true;
+    }
+    keys.forEach(function (k) {
+      if (k === char.klass) { return; }
+      out.push({ key: k, cls: YARN.classInfo(k), levels: Math.max(1, extra[k]) });
+    });
+    if (!starterSeen) {
+      out.unshift({ key: char.klass, cls: YARN.classInfo(char.klass), levels: 1 });
+    }
+    return out;
+  };
+
+  // Total character level = sum across every class. This is the number
+  // that drives proficiency bonus, XP-derived level display, etc. - RAW is
+  // explicit that multiclassing never changes how proficiency bonus scales.
+  YARN.totalLevel = function (char, prog) {
+    return YARN.classBreakdown(char, prog).reduce(function (sum, e) { return sum + e.levels; }, 0);
+  };
+
   YARN.saveTotal = function (char, prog, key) {
     var total = YARN.abilityMod(char, prog, key);
     var cls = YARN.classInfo(char.klass);
     var proficient = (cls && cls.saves.indexOf(key) !== -1) ||
                      char.saveProfs.indexOf(key) !== -1;
-    if (proficient) { total += YARN.profBonus(prog ? prog.level : 1); }
+    if (proficient) { total += YARN.profBonus(YARN.totalLevel(char, prog)); }
     return total;
   };
 
@@ -346,7 +390,7 @@
     var skill = YARN.skillInfoFor(char, skillKey);
     if (!skill) { return 0; }
     var total = YARN.abilityMod(char, prog, skill.ability);
-    var pb = YARN.profBonus(prog ? prog.level : 1);
+    var pb = YARN.profBonus(YARN.totalLevel(char, prog));
     var fromBackground = YARN.backgroundSkills(char).indexOf(skillKey) !== -1;
     if (char.skillExpertise.indexOf(skillKey) !== -1) { total += pb * 2; }
     else if (fromBackground || char.skillProfs.indexOf(skillKey) !== -1) { total += pb; }
@@ -414,24 +458,45 @@
   YARN.spellSaveDC = function (char, prog) {
     var key = YARN.spellAbilityKey(char);
     if (!key) { return null; }
-    return 8 + YARN.profBonus(prog ? prog.level : 1) + YARN.abilityMod(char, prog, key);
+    return 8 + YARN.profBonus(YARN.totalLevel(char, prog)) + YARN.abilityMod(char, prog, key);
   };
 
   YARN.spellAttack = function (char, prog) {
     var key = YARN.spellAbilityKey(char);
     if (!key) { return null; }
-    return YARN.profBonus(prog ? prog.level : 1) + YARN.abilityMod(char, prog, key);
+    return YARN.profBonus(YARN.totalLevel(char, prog)) + YARN.abilityMod(char, prog, key);
   };
 
-  // Average HP: full hit die at level 1, then average roll (die/2 + 1) per
-  // level after, plus CON mod every level. The standard "take average" rule.
+  // Average HP: the level-1 class gets its MAX hit die + CON (the classic
+  // "take max at level 1" rule); every level after that - regardless of
+  // which class it lands in once multiclassed - gets that class's own
+  // average roll (die/2 + 1) + CON. For a single-classed character this is
+  // mathematically identical to the old flat formula.
   YARN.suggestedHpMax = function (char, prog) {
-    var cls = YARN.classInfo(char.klass);
-    if (!cls) { return 0; }
-    var level = Math.max(1, (prog && prog.level) || 1);
+    var breakdown = YARN.classBreakdown(char, prog);
     var con = YARN.abilityMod(char, prog, "con");
-    var perLevel = Math.floor(cls.hitDie / 2) + 1;
-    return cls.hitDie + con + (level - 1) * (perLevel + con);
+    var total = 0, first = true;
+    breakdown.forEach(function (entry) {
+      if (!entry.cls) { return; }
+      for (var i = 0; i < entry.levels; i++) {
+        if (first) { total += entry.cls.hitDie + con; first = false; }
+        else { total += Math.floor(entry.cls.hitDie / 2) + 1 + con; }
+      }
+    });
+    return total;
+  };
+
+  // Hit dice pool grouped by die size, e.g. {10: 3, 6: 2} for a Fighter
+  // 3/Wizard 2. Display-only for now (actual short-rest spending still uses
+  // the single hitDiceUsed counter) but this is what a future rest-tracker
+  // panel needs, and it falls straight out of the same breakdown.
+  YARN.hitDicePool = function (char, prog) {
+    var pool = {};
+    YARN.classBreakdown(char, prog).forEach(function (entry) {
+      if (!entry.cls) { return; }
+      pool[entry.cls.hitDie] = (pool[entry.cls.hitDie] || 0) + entry.levels;
+    });
+    return pool;
   };
 
   YARN.levelForXp = function (xp) {
@@ -442,22 +507,34 @@
     return level;
   };
 
-  // Slots available at a level, respecting the class's caster progression.
+  // Multiclass Spellcasting (PHB rule): full casters contribute their whole
+  // level to a combined caster level, half casters floor(level/2), third
+  // casters floor(level/3) - sum those and look the total up on the same
+  // full-caster table. Warlock's Pact Magic is its OWN separate pool (short
+  // rest, tiny fixed table) and never joins that combined total, whether or
+  // not you're multiclassed - that was wrong before this pass too (Warlock
+  // slots were silently using the full-caster table).
   YARN.spellSlots = function (char, prog) {
-    var cls = YARN.classInfo(char.klass);
-    if (!cls || !cls.caster) { return null; }
-    var level = Math.max(1, (prog && prog.level) || 1);
-    var effective = level;
-    if (cls.caster === "half") { effective = Math.floor(level / 2); }
-    if (cls.caster === "third") { effective = Math.floor(level / 3); }
-    if (effective < 1) { return null; }
-    return YARN.FULL_CASTER_SLOTS[Math.min(20, effective)] || null;
+    var breakdown = YARN.classBreakdown(char, prog);
+    var casterLevel = 0, pactLevel = 0;
+    breakdown.forEach(function (entry) {
+      if (!entry.cls || !entry.cls.caster) { return; }
+      if (entry.cls.caster === "full") { casterLevel += entry.levels; }
+      else if (entry.cls.caster === "half") { casterLevel += Math.floor(entry.levels / 2); }
+      else if (entry.cls.caster === "third") { casterLevel += Math.floor(entry.levels / 3); }
+      else if (entry.cls.caster === "pact") { pactLevel += entry.levels; }
+    });
+    var slots = casterLevel > 0 ? (YARN.FULL_CASTER_SLOTS[Math.min(20, casterLevel)] || null) : null;
+    var pact = pactLevel > 0 ? (YARN.PACT_SLOTS[Math.min(20, pactLevel)] || null) : null;
+    if (!slots && !pact) { return null; }
+    return { slots: slots, pact: pact };
   };
 
   // Convenience bundle so renderers make ONE call instead of a dozen.
   YARN.derived = function (char, prog) {
     if (!char) { return null; }
     var scores = {}, mods = {}, saves = {}, skills = {};
+    var totalLevel = YARN.totalLevel(char, prog);
     YARN.ABILITY_KEYS.forEach(function (k) {
       scores[k] = YARN.abilityScore(char, prog, k);
       mods[k] = YARN.mod(scores[k]);
@@ -471,7 +548,10 @@
       mods: mods,
       saves: saves,
       skills: skills,
-      profBonus: YARN.profBonus(prog ? prog.level : 1),
+      profBonus: YARN.profBonus(totalLevel),
+      totalLevel: totalLevel,
+      classBreakdown: YARN.classBreakdown(char, prog),
+      hitDicePool: YARN.hitDicePool(char, prog),
       ac: YARN.ac(char, prog),
       initiative: YARN.initiative(char, prog),
       passivePerception: YARN.passivePerception(char, prog),

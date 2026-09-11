@@ -202,6 +202,34 @@ def main() -> int:
         check("Guide's origin feat renders on the sheet", "Magic Initiate (Druid)" in panel_text)
         check("Guide's granted skills render on the sheet", "Stealth" in panel_text and "Survival" in panel_text)
 
+        print("\n  -- sheet's Classes panel: real multiclassing, driven through the UI --")
+        page.select_option('select[data-model="char.klass"]', "fighter")
+        page.fill('input[data-model="prog.level"]', "3")
+        single_class_text = page.inner_text(".wrap")
+        check("single-classed state shows the '+ Multiclass' prompt", "+ Multiclass" in single_class_text)
+
+        # "+ Multiclass" triggers two real window.prompt() dialogs (which
+        # class, how many levels) - answer them the way a player would.
+        answers = iter(["wizard", "2"])
+        page.on("dialog", lambda d: d.accept(next(answers, "")))
+        page.click('[data-action="add-class"]')
+
+        multi_text = page.inner_text(".wrap")
+        check("Classes panel now lists both Fighter and Wizard", "Fighter" in multi_text and "Wizard" in multi_text)
+        check("total level combines to 5 (3 Fighter + 2 Wizard)", "total level 5" in multi_text)
+        level_input_disabled = page.eval_on_selector(
+            'div.panel.span-2 input[type="number"][disabled]', "el => el.value"
+        )
+        check("the plain Level field becomes a computed, disabled 5 once multiclassed", level_input_disabled == "5")
+        prof_bonus_text = page.inner_text('[data-out="profBonus"]')
+        check("Prof. Bonus tile reflects the COMBINED level (+3 at total level 5)", prof_bonus_text == "+3")
+
+        page.click('[data-action="revert-multiclass"]')
+        reverted_text = page.inner_text(".wrap")
+        check("reverting drops back to the plain single-class Level field", "+ Multiclass" in reverted_text)
+        level_after_revert = page.eval_on_selector('input[data-model="prog.level"]', "el => el.value")
+        check("reverting preserves the total (5) rather than losing it", level_after_revert == "5")
+
         browser.close()
 
     print("")
